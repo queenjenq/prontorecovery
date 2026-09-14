@@ -712,7 +712,10 @@ function submitPin(){
 }
 function onAuthReady(user){
   currentUser = user;
-  loadSettingsFromCloud().then(()=>{
+  const errEl = document.getElementById('pinErr');
+  loadSettingsFromCloud().catch(err=>{
+    console.error('Settings load failed', err);
+  }).then(()=>{
     subscribeCases();
     unlockApp();
   });
@@ -786,7 +789,12 @@ function subscribeCases(){
   unsubCases = fbDb.collection('users').doc(currentUser.uid).collection('cases').onSnapshot(snap=>{
     CASES = snap.docs.map(d=>d.data());
     renderDashboard(); renderCases(); renderBilling(); renderReports();
-  }, err=>console.error('Sync error', err));
+  }, err=>{
+    console.error('Sync error', err);
+    alert(LANG==='es'
+      ? 'Conectado, pero sin permiso para leer los datos. Revise las reglas de Firestore en Firebase.'
+      : 'Signed in, but not permitted to read data. Check the Firestore rules in Firebase.');
+  });
 }
 function loadSettingsFromCloud(){
   if(!FIREBASE_ENABLED || !currentUser) return Promise.resolve();
