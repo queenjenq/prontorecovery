@@ -430,40 +430,39 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 <script>
-/* ---------- Firebase (optional cloud sync) ----------
-   Paste your Firebase web app config below to turn on multi device sync.
-   Leave it as is and the app keeps working exactly as before, saved only
-   in this browser's local storage. Steps to enable:
-   1. console.firebase.google.com -> create project -> add a web app
-   2. Build > Authentication > Sign in method > enable Email/Password
-   3. Build > Firestore Database > create database (production mode)
-   3b. Build > Storage > get started (for document uploads), Rules, paste:
-        rules_version = '2';
-        service firebase.storage {
-          match /b/{bucket}/o {
-            match /users/{uid}/{allPaths=**} {
-              allow read, write: if request.auth != null && request.auth.uid == uid;
-            }
-          }
+/* ---------- Firebase (cloud sync, ENABLED) ----------
+   Sharing the credit-edit-timesheet project (same one Vehicle Desk uses).
+   Safe to share: this app signs in with emails like
+   workspace@pronto-recovery.local, a completely separate namespace from
+   whatever Vehicle Desk uses, so the two apps get different uids and never
+   touch each other's documents.
+
+   One-time checklist on that project, done once:
+   1. Authentication > Sign in method > Email/Password enabled
+   2. Firestore Database exists
+   3. Storage is turned on (Build > Storage > get started), needed for
+      document uploads
+   4. Firestore rules and Storage rules include the block below, ADDED
+      alongside whatever rules already exist for Vehicle Desk, not replacing
+      them:
+
+        Firestore:
+        match /users/{uid}/{document=**} {
+          allow read, write: if request.auth != null && request.auth.uid == uid;
         }
-   4. Firestore Rules, paste:
-        rules_version = '2';
-        service cloud.firestore {
-          match /databases/{database}/documents {
-            match /users/{uid}/{document=**} {
-              allow read, write: if request.auth != null && request.auth.uid == uid;
-            }
-          }
+
+        Storage:
+        match /users/{uid}/{allPaths=**} {
+          allow read, write: if request.auth != null && request.auth.uid == uid;
         }
-   5. Paste the config object below.
 */
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCXQ5YLX5a3UvgryHXHyEzm0Qh1wxYXeFo",
+  authDomain: "credit-edit-timesheet.firebaseapp.com",
+  projectId: "credit-edit-timesheet",
+  storageBucket: "credit-edit-timesheet.firebasestorage.app",
+  messagingSenderId: "713608425283",
+  appId: "1:713608425283:web:04512000168a57f677c9f6"
 };
 const FIREBASE_ENABLED = !!(firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY");
 let fbAuth = null, fbDb = null, fbStorage = null, currentUser = null, unsubCases = null;
