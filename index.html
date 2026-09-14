@@ -225,6 +225,7 @@
       <div class="toolbar">
         <button class="btn gold" onclick="openCaseModal()" data-i18n="newLead">+ New lead</button>
         <button class="btn ghost" onclick="document.getElementById('csvFile').click()" data-i18n="importBtn">Import CSV</button>
+        <button class="btn ghost" onclick="printCasesReport()" data-i18n="printReportBtn">Print report</button>
         <input type="file" id="csvFile" accept=".csv" style="display:none;" onchange="handleCsv(event)">
       </div>
       <div class="toolbar">
@@ -487,7 +488,7 @@ en:{
   kpiPotential:"Potential recovery", kpiActive:"Active cases", kpiRecovered:"Recovered to clients", kpiCollected:"Fees collected",
   collRateTitle:"Collection rate", collRateNote:"This is the number to watch during validation. If clients recover money and don't pay, the model needs adjusting before more is invested in software.",
   followupTitle:"Needs follow up", topLeadsTitle:"Top leads", newLead:"New lead", pipelineTitle:"Pipeline",
-  importBtn:"Import CSV", fAll:"All statuses",
+  importBtn:"Import CSV", printReportBtn:"Print report", fAll:"All statuses",
   billingTitle:"Fees owed and collected",
   outreachTitle:"Outreach template", outreachNote:"Copy and personalize. Never state a dollar amount unless the record has been verified against the claimant's identity.", copyBtn:"Copy text", printBtn:"Print",
   settingsTitle:"Settings", feeCapLabel:"Standard fee percentage (max 10%, Property Code 74.507)", thresholdLabel:"Minimum recovery value to qualify a lead",
@@ -537,7 +538,7 @@ es:{
   kpiPotential:"Recuperación potencial", kpiActive:"Casos activos", kpiRecovered:"Recuperado para clientes", kpiCollected:"Comisiones cobradas",
   collRateTitle:"Tasa de cobro", collRateNote:"Este es el número a vigilar durante la validación. Si los clientes recuperan dinero y no pagan, el modelo necesita ajustarse antes de invertir más en el software.",
   followupTitle:"Requiere seguimiento", topLeadsTitle:"Casos principales", newLead:"Nuevo caso potencial", pipelineTitle:"Flujo de trabajo",
-  importBtn:"Importar CSV", fAll:"Todos los estados",
+  importBtn:"Importar CSV", printReportBtn:"Imprimir reporte", fAll:"Todos los estados",
   billingTitle:"Comisiones pendientes y cobradas",
   outreachTitle:"Plantilla de contacto", outreachNote:"Copie y personalice. Nunca indique una cantidad exacta a menos que el registro esté verificado con la identidad del reclamante.", copyBtn:"Copiar texto", printBtn:"Imprimir",
   settingsTitle:"Ajustes", feeCapLabel:"Porcentaje de comisión estándar (máximo 10%, Sección 74.507)", thresholdLabel:"Valor mínimo de recuperación para calificar un caso potencial",
@@ -1504,6 +1505,50 @@ function copyText(elId){
 function printText(elId){
   const text = document.getElementById(elId).textContent;
   document.getElementById('printArea').textContent = text;
+  window.print();
+}
+function printCasesReport(){
+  const q = (document.getElementById('caseSearch').value||'').toLowerCase();
+  const f = document.getElementById('caseFilter').value;
+  let list = CASES.filter(c=>{
+    const matchQ = !q || (c.ownerName||'').toLowerCase().includes(q) || (c.city||'').toLowerCase().includes(q);
+    const matchF = !f || c.status===f;
+    return matchQ && matchF;
+  }).sort((a,b)=> (b.matchScore||0)-(a.matchScore||0));
+  const rows = list.map(c=>{
+    const fee = computeFee(c);
+    return `<tr>
+      <td>${escapeHtml(c.ownerName||'')}</td>
+      <td>${escapeHtml(c.city||'')}</td>
+      <td>${c.matchScore||0}</td>
+      <td>${t(STATUS_LABEL[c.status])}</td>
+      <td style="text-align:right;">${fmtMoney(c.estimatedValue)}</td>
+      <td style="text-align:right;">${fmtMoney(fee.fee)}</td>
+    </tr>`;
+  }).join('');
+  const totalVal = list.reduce((s,c)=>s+(Number(c.estimatedValue)||0),0);
+  const totalFee = list.reduce((s,c)=>s+computeFee(c).fee,0);
+  const dateStr = new Date().toLocaleDateString(LANG==='es'?'es-MX':'en-US');
+  const title = LANG==='es' ? 'Reporte de casos - Pronto Recovery' : 'Case report - Pronto Recovery';
+  document.getElementById('printArea').innerHTML = `
+    <h2 style="font-family:'Fraunces',serif;margin-bottom:2px;">${title}</h2>
+    <div style="font-size:12px;color:#555;margin-bottom:14px;">${dateStr} &middot; ${list.length} ${LANG==='es'?'casos':'cases'}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="border-bottom:1.5px solid #333;text-align:left;">
+        <th style="padding:5px 6px;">${t('fOwner')}</th>
+        <th style="padding:5px 6px;">${t('fCity')}</th>
+        <th style="padding:5px 6px;">${t('fScore')}</th>
+        <th style="padding:5px 6px;">${t('fStatus')}</th>
+        <th style="padding:5px 6px;text-align:right;">${t('lGross')}</th>
+        <th style="padding:5px 6px;text-align:right;">${t('lFee')}</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr style="border-top:1.5px solid #333;font-weight:700;">
+        <td style="padding:6px;" colspan="4">${LANG==='es'?'Total':'Total'}</td>
+        <td style="padding:6px;text-align:right;">${fmtMoney(totalVal)}</td>
+        <td style="padding:6px;text-align:right;">${fmtMoney(totalFee)}</td>
+      </tr></tfoot>
+    </table>`;
   window.print();
 }
 
