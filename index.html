@@ -253,6 +253,9 @@
 
       <div class="section-title" data-i18n="readyInvoiceTitle">💵 Recovered, ready to invoice</div>
       <div class="card" id="todayInvoiceCard"></div>
+
+      <div class="section-title" data-i18n="staleTitle">⚠️ Going cold, no activity in 10+ days</div>
+      <div class="card" id="todayStaleCard"></div>
     </div>
 
     <!-- DASHBOARD -->
@@ -624,8 +627,12 @@ en:{
   tabToday:"Today", tabDash:"Dashboard", tabCases:"Cases", tabBilling:"Billing", tabOutreach:"Outreach", tabSettings:"Settings",
   quickLookupBtn:"Look up a name on ClaimItTexas",
   overdueTitle:"🔴 Overdue follow-ups", dueTodayTitle:"🟡 Due today", newLeadsTitle:"🆕 New leads, not yet contacted", readyInvoiceTitle:"💵 Recovered, ready to invoice",
+  staleTitle:"⚠️ Going cold, no activity in 10+ days", todayNoStale:"Nothing going cold. Everything has recent activity.",
   todayAllClearOverdue:"Nothing overdue. You're on top of it.", todayAllClearDue:"Nothing due today.",
   todayNoNewLeads:"No new leads waiting. Time to go find some.", todayNoInvoices:"Nothing waiting on an invoice right now.",
+  testimonialAsk:"Nice one! Want to copy a quick line asking them for a review or testimonial for your TikTok or Facebook?",
+  testimonialScript:"So glad that worked out for you! If you have a minute, would you mind if I shared a quick line about it, no names or details, just that Pronto Recovery helped you get money you didn't know was waiting? It really helps other people trust the process.",
+  testimonialCopied:"Copied. Paste it into a text or message whenever feels right.",
   discTitle:"How Pronto Recovery gets paid:",
   discBody:"The Texas Comptroller pays the claimant directly. Pronto Recovery never receives, holds, or routes the state's payment. The claimant pays the contracted fee separately after they confirm they were paid, per the signed agreement, capped at 10% under Property Code Section 74.507.",
   kpiPotential:"Potential recovery", kpiActive:"Active cases", kpiRecovered:"Recovered to clients", kpiCollected:"Fees collected",
@@ -693,8 +700,12 @@ es:{
   tabToday:"Hoy", tabDash:"Panel", tabCases:"Casos", tabBilling:"Cobros", tabOutreach:"Contacto", tabSettings:"Ajustes",
   quickLookupBtn:"Buscar un nombre en ClaimItTexas",
   overdueTitle:"🔴 Seguimientos vencidos", dueTodayTitle:"🟡 Para hoy", newLeadsTitle:"🆕 Casos nuevos sin contactar", readyInvoiceTitle:"💵 Recuperados, listos para facturar",
+  staleTitle:"⚠️ Enfriándose, sin actividad en 10+ días", todayNoStale:"Nada se está enfriando. Todo tiene actividad reciente.",
   todayAllClearOverdue:"No hay nada vencido. Va muy bien.", todayAllClearDue:"No hay nada pendiente para hoy.",
   todayNoNewLeads:"No hay casos nuevos esperando. Hora de buscar más.", todayNoInvoices:"No hay nada esperando factura por ahora.",
+  testimonialAsk:"¡Bien hecho! ¿Quiere copiar una línea rápida para pedirle una reseña o testimonio para su TikTok o Facebook?",
+  testimonialScript:"¡Qué bueno que le funcionó! Si tiene un minuto, ¿le molestaría si comparto una línea rápida, sin nombres ni detalles, solo que Pronto Recovery le ayudó a recuperar dinero que no sabía que le esperaba? De verdad ayuda a que otras personas confíen en el proceso.",
+  testimonialCopied:"Copiado. Péguelo en un mensaje cuando le parezca buen momento.",
   discTitle:"Cómo cobra Pronto Recovery:",
   discBody:"El Contralor de Texas paga directamente al reclamante. Pronto Recovery nunca recibe, retiene ni gestiona el pago del estado. El cliente paga la comisión contratada por separado, después de confirmar que recibió su pago, según el acuerdo firmado, con un tope del 10% bajo la Sección 74.507 del Código de Propiedad.",
   kpiPotential:"Recuperación potencial", kpiActive:"Casos activos", kpiRecovered:"Recuperado para clientes", kpiCollected:"Comisiones cobradas",
@@ -1192,6 +1203,7 @@ function renderToday(){
   const dueCard = document.getElementById('todayDueCard');
   const newCard = document.getElementById('todayNewCard');
   const invoiceCard = document.getElementById('todayInvoiceCard');
+  const staleCard = document.getElementById('todayStaleCard');
   if(!overdueCard) return; // Today view not in DOM yet on first paint
 
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1210,6 +1222,15 @@ function renderToday(){
 
   const readyToInvoice = CASES.filter(c=> c.recoveryConfirmed && !(c.collection && c.collection.invoiceDate));
   invoiceCard.innerHTML = loadingOrEmptyHTML(readyToInvoice, 'todayNoInvoices') || readyToInvoice.map(c=>caseRowHTML(c)).join('');
+
+  const staleCutoff = new Date(today.getTime() - 10*24*60*60*1000);
+  const stale = CASES.filter(c=>{
+    if(['closed','paid'].includes(c.status)) return false;
+    if(c.nextActionDate) return false; // already tracked via overdue/due-today
+    const last = new Date(c.updatedAt || c.createdAt || 0);
+    return last < staleCutoff;
+  }).sort((a,b)=> new Date(a.updatedAt||a.createdAt||0) - new Date(b.updatedAt||b.createdAt||0));
+  staleCard.innerHTML = loadingOrEmptyHTML(stale, 'todayNoStale') || stale.map(c=>caseRowHTML(c)).join('');
 }
 
 function celebrate(amount){
@@ -1229,6 +1250,12 @@ function celebrate(amount){
   toast.textContent = fmtMoney(amount) + ' ' + t('winToastMsg');
   toast.classList.add('show');
   setTimeout(()=>toast.classList.remove('show'), 3200);
+  setTimeout(()=>{
+    if(confirm(t('testimonialAsk'))){
+      navigator.clipboard.writeText(t('testimonialScript')).catch(()=>{});
+      alert(t('testimonialCopied'));
+    }
+  }, 3600);
 }
 
 /* ---------- Cases list ---------- */
