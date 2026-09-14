@@ -887,30 +887,48 @@ let CASES = FIREBASE_ENABLED ? [] : loadCases();
 let SETTINGS = loadSettings();
 
 /* Cloud persistence, active only when FIREBASE_ENABLED and signed in.
-   Falls back to the local blob write whenever Firebase is off. */
+   Falls back to the local blob write whenever Firebase is off.
+   These now return a Promise and surface a visible alert on failure,
+   instead of silently swallowing errors while the UI still looks saved. */
+function stripUndefined(obj){
+  // Firestore rejects literal `undefined` values; this also catches any
+  // stray undefined introduced by a bug, cheaply, via a JSON round-trip.
+  return JSON.parse(JSON.stringify(obj));
+}
+function cloudErrorAlert(err, action){
+  console.error(action+' failed', err);
+  const code = err && err.code ? ' ('+err.code+')' : '';
+  alert((LANG==='es'
+    ? 'No se pudo guardar en la nube'+code+'. Revise su conexión y las reglas de Firestore. El cambio sigue solo en este dispositivo por ahora.'
+    : 'Cloud save failed'+code+'. Check your connection and Firestore rules. The change is only on this device for now.'));
+}
 function db_setCase(caseObj){
   if(FIREBASE_ENABLED && currentUser){
-    fbDb.collection('users').doc(currentUser.uid).collection('cases').doc(caseObj.id).set(caseObj)
-      .catch(err=>console.error('Save failed', err));
+    const clean = stripUndefined(caseObj);
+    return fbDb.collection('users').doc(currentUser.uid).collection('cases').doc(clean.id).set(clean)
+      .catch(err=>{ cloudErrorAlert(err, 'Save'); throw err; });
   } else {
     saveCases(CASES);
+    return Promise.resolve();
   }
 }
 function db_deleteCase(id){
   if(FIREBASE_ENABLED && currentUser){
-    fbDb.collection('users').doc(currentUser.uid).collection('cases').doc(id).delete()
-      .catch(err=>console.error('Delete failed', err));
+    return fbDb.collection('users').doc(currentUser.uid).collection('cases').doc(id).delete()
+      .catch(err=>{ cloudErrorAlert(err, 'Delete'); throw err; });
   } else {
     saveCases(CASES);
+    return Promise.resolve();
   }
 }
 function db_clearAll(){
   if(FIREBASE_ENABLED && currentUser){
     const batch = fbDb.batch();
     CASES.forEach(c=> batch.delete(fbDb.collection('users').doc(currentUser.uid).collection('cases').doc(c.id)));
-    batch.commit().catch(err=>console.error('Clear failed', err));
+    return batch.commit().catch(err=>{ cloudErrorAlert(err, 'Clear'); throw err; });
   } else {
     saveCases(CASES);
+    return Promise.resolve();
   }
 }
 let casesLoaded = !FIREBASE_ENABLED;
@@ -1470,9 +1488,17 @@ function doSaveCase(id){
   }
 
   if(!CASES.find(c=>c.id===id)) CASES.push(existing);
-  db_setCase(existing);
+  db_setCase(existing).then(()=>{
+    if(FIREBASE_ENABLED) showSavedToast();
+  }).catch(()=>{ /* already alerted inside db_setCase */ });
   renderDashboard(); renderCases(); renderBilling();
   closeModal('caseModalBg');
+}
+function showSavedToast(){
+  const toast = document.getElementById('winToast');
+  toast.textContent = LANG==='es' ? 'Guardado en la nube.' : 'Saved to the cloud.';
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 1800);
 }
 
 function deleteCase(){
