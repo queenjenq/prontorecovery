@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pronto Recovery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14312B; --ink-2:#1B3F37; --ink-3:#234C42;
+    --paper:#EEF0EA; --paper-2:#FFFFFF;
+    --gold:#B8863D; --gold-2:#D4A857;
+    --teal:#4A6670; --rust:#A84A32;
+    --line: rgba(20,49,43,0.12); --text-soft: rgba(20,49,43,0.62);
+    --radius: 10px; --serif: 'Fraunces', Georgia, serif; --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--ink);}
+  h1,h2,h3,.num{font-family:var(--serif);}
+  button{font-family:var(--sans);}
+  a{color:inherit;}
+
+  #app{min-height:100vh;display:none;}
+  header.top{background:var(--ink);color:var(--paper);padding:18px 20px 0 20px;position:sticky;top:0;z-index:20;}
+  .top-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand .mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(155deg,var(--gold-2),var(--gold));
+    display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:var(--serif);font-weight:700;font-size:18px;flex:none;}
+  .brand h1{font-size:20px;font-weight:600;margin:0;letter-spacing:0.2px;}
+  .brand small{display:block;font-size:11px;color:rgba(238,240,234,0.6);font-family:var(--sans);}
+  .lang-toggle{display:flex;background:rgba(238,240,234,0.08);border-radius:999px;padding:3px;flex:none;}
+  .lang-toggle button{border:none;background:transparent;color:rgba(238,240,234,0.65);padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;}
+  .lang-toggle button.active{background:var(--gold);color:var(--ink);}
+
+  nav.tabs{display:flex;gap:2px;margin-top:16px;overflow-x:auto;scrollbar-width:none;}
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{background:transparent;border:none;color:rgba(238,240,234,0.55);padding:10px 14px;font-size:13px;font-weight:600;
+    white-space:nowrap;cursor:pointer;border-bottom:2px solid transparent;}
+  nav.tabs button.active{color:var(--paper);border-bottom:2px solid var(--gold);}
+
+  main{padding:20px;max-width:1080px;margin:0 auto;padding-bottom:80px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .card{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+  .card + .card{margin-top:12px;}
+  .section-title{font-size:13px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-soft);margin:22px 0 10px 0;font-weight:600;}
+  .section-title:first-child{margin-top:0;}
+  .row-between{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  @media(min-width:640px){.kpis{grid-template-columns:repeat(4,1fr);}}
+  .kpi{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:14px;}
+  .kpi .num{font-size:24px;font-weight:600;line-height:1.1;}
+  .kpi .lbl{font-size:11.5px;color:var(--text-soft);margin-top:4px;}
+  .kpi.accent{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .kpi.accent .lbl{color:rgba(238,240,234,0.6);}
+  .kpi.gold .num{color:var(--gold);}
+  .kpi.teal .num{color:var(--teal);}
+
+  .disclosure{background:#E7E9DE;border:1px solid #C9CDB8;border-radius:var(--radius);padding:12px 14px;font-size:12.5px;color:#3A4A36;margin-bottom:16px;line-height:1.5;}
+  .disclosure strong{color:#2A3728;}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;background:var(--ink);color:var(--paper);border:none;
+    border-radius:8px;padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;}
+  .btn.gold{background:var(--gold);color:var(--ink);}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
+  .btn.sm{padding:6px 10px;font-size:12px;}
+  .btn.block{width:100%;justify-content:center;}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .toolbar input[type=search], .toolbar select{flex:1;min-width:120px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-2);}
+
+  .case-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;}
+  .case-row:last-child{border-bottom:none;}
+  .score{width:42px;height:42px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:600;font-size:13px;color:var(--paper);}
+  .case-main{flex:1;min-width:0;}
+  .case-main .nm{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .case-main .meta{font-size:12px;color:var(--text-soft);margin-top:2px;}
+  .case-main .meta.due{color:var(--rust);font-weight:600;}
+  .case-amt{text-align:right;flex:none;}
+  .case-amt .val{font-family:var(--serif);font-weight:600;font-size:15px;}
+  .status-pill{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:3px 8px;border-radius:999px;margin-top:3px;}
+
+  .empty{text-align:center;padding:40px 16px;color:var(--text-soft);}
+  .empty .num{font-size:34px;color:var(--line);margin-bottom:6px;}
+
+  label{display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 5px 0;}
+  label:first-child{margin-top:0;}
+  input,select,textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:var(--sans);background:var(--paper-2);color:var(--ink);}
+  textarea{resize:vertical;min-height:80px;line-height:1.5;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(20,49,43,0.55);z-index:50;display:none;align-items:flex-end;justify-content:center;}
+  .modal-bg.open{display:flex;}
+  .modal{background:var(--paper-2);width:100%;max-width:560px;border-radius:16px 16px 0 0;max-height:88vh;overflow-y:auto;padding:20px;}
+  @media(min-width:640px){.modal-bg{align-items:center;} .modal{border-radius:16px;}}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .modal-head h3{margin:0;font-size:18px;}
+  .close-x{background:none;border:none;font-size:20px;color:var(--text-soft);cursor:pointer;line-height:1;padding:4px;}
+
+  .checklist-item{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line);}
+  .checklist-item:last-child{border-bottom:none;}
+  .checklist-item input{width:auto;}
+  .checklist-item span{font-size:13.5px;}
+  .checklist-item.neg span{color:var(--rust);}
+
+  .agreement-box{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px;font-size:12.5px;line-height:1.6;white-space:pre-wrap;font-family:var(--sans);max-height:280px;overflow-y:auto;}
+  .fee-split{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin:12px 0;}
+  .fee-split div{background:var(--paper);border-radius:8px;padding:10px 6px;}
+  .fee-split .v{font-family:var(--serif);font-weight:600;font-size:16px;}
+  .fee-split .l{font-size:10px;color:var(--text-soft);margin-top:2px;text-transform:uppercase;}
+
+  .log{margin-top:8px;}
+  .log-item{font-size:12px;color:var(--text-soft);padding:6px 0;border-bottom:1px dashed var(--line);}
+  .log-item:last-child{border-bottom:none;}
+  .log-item b{color:var(--ink);}
+
+  .score-badge-row{display:flex;align-items:center;gap:10px;background:var(--paper);border-radius:8px;padding:10px 12px;margin-bottom:6px;}
+  .score-badge-row .big{font-family:var(--serif);font-weight:700;font-size:22px;}
+
+  footer.legal{max-width:1080px;margin:0 auto;padding:0 20px 40px 20px;font-size:11px;color:var(--text-soft);line-height:1.6;}
+
+  /* PIN gate */
+  #pinGate{position:fixed;inset:0;background:var(--ink);color:var(--paper);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .pin-box{max-width:320px;width:100%;text-align:center;}
+  .pin-box .mark{width:52px;height:52px;border-radius:12px;background:linear-gradient(155deg,var(--gold-2),var(--gold));margin:0 auto 16px auto;display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:var(--serif);font-weight:700;font-size:24px;}
+  .pin-box h2{margin:0 0 6px 0;font-size:19px;}
+  .pin-box p{font-size:12.5px;color:rgba(238,240,234,0.6);margin:0 0 18px 0;line-height:1.5;}
+  .pin-box input{text-align:center;letter-spacing:6px;font-size:20px;background:rgba(238,240,234,0.08);border:1px solid rgba(238,240,234,0.2);color:var(--paper);}
+  .pin-box .err{color:#E88;font-size:12px;height:16px;margin-top:8px;}
+
+  .hint{font-size:11px;color:var(--text-soft);margin-top:6px;line-height:1.5;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{position:absolute;top:0;left:0;width:100%;padding:24px;white-space:pre-wrap;font-family:var(--sans);font-size:12.5px;line-height:1.6;}
+  }
+  #printArea{display:none;}
+</style>
+</head>
+<body>
+
+<div id="pinGate">
+  <div class="pin-box">
+    <div class="mark">PR</div>
+    <h2 id="pinTitle">Set a screen lock PIN</h2>
+    <p id="pinSub">This is a local screen lock only, not encryption. Anyone with browser developer tools could still see the data. Use it as light protection on a shared device.</p>
+    <input type="text" id="workspaceInput" placeholder="Workspace name" style="display:none;text-align:center;letter-spacing:normal;font-size:14px;">
+    <input type="password" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••" style="margin-top:10px;" onkeydown="if(event.key==='Enter') submitPin()">
+    <input type="password" id="pinConfirm" inputmode="numeric" maxlength="6" placeholder="confirm" style="display:none;margin-top:8px;" onkeydown="if(event.key==='Enter') submitPin()">
+    <div class="err" id="pinErr"></div>
+    <button class="btn gold block" style="margin-top:12px;" onclick="submitPin()" id="pinBtn">Continue</button>
+    <div class="hint" id="pinToggle" style="display:none;cursor:pointer;text-decoration:underline;"></div>
+  </div>
+</div>
+
+<div id="app">
+
+  <header class="top">
+    <div class="top-row">
+      <div class="brand">
+        <div class="mark">PR</div>
+        <div>
+          <h1 data-i18n="brandName">Pronto Recovery</h1>
+          <small data-i18n="brandSub">Texas unclaimed property research and recovery assistance</small>
+        </div>
+      </div>
+      <div class="lang-toggle">
+        <button id="langEN" class="active" onclick="setLang('en')">EN</button>
+        <button id="langES" onclick="setLang('es')">ES</button>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-view="dashboard" onclick="showView('dashboard')" data-i18n="tabDash">Dashboard</button>
+      <button class="tab-btn" data-view="cases" onclick="showView('cases')" data-i18n="tabCases">Cases</button>
+      <button class="tab-btn" data-view="billing" onclick="showView('billing')" data-i18n="tabBilling">Billing</button>
+      <button class="tab-btn" data-view="reports" onclick="showView('reports')" data-i18n="tabReports">Reports</button>
+      <button class="tab-btn" data-view="outreach" onclick="showView('outreach')" data-i18n="tabOutreach">Outreach</button>
+      <button class="tab-btn" data-view="settings" onclick="showView('settings')" data-i18n="tabSettings">Settings</button>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="disclosure">
+        <strong data-i18n="discTitle">How Pronto Recovery gets paid:</strong>
+        <span data-i18n="discBody">The Texas Comptroller pays the claimant directly. Pronto Recovery never receives, holds, or routes the state's payment. The claimant pays the contracted fee separately after they confirm they were paid, per the signed agreement, capped at 10% under Property Code Section 74.507.</span>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi accent"><div class="num" id="kpiPotential">$0</div><div class="lbl" data-i18n="kpiPotential">Potential recovery</div></div>
+        <div class="kpi"><div class="num" id="kpiActive">0</div><div class="lbl" data-i18n="kpiActive">Active cases</div></div>
+        <div class="kpi teal"><div class="num" id="kpiRecovered">$0</div><div class="lbl" data-i18n="kpiRecovered">Recovered to clients</div></div>
+        <div class="kpi gold"><div class="num" id="kpiCollected">$0</div><div class="lbl" data-i18n="kpiCollected">Fees collected</div></div>
+      </div>
+
+      <div class="section-title" data-i18n="collRateTitle">Collection rate</div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <div class="num" id="collRate" style="font-size:30px;">0%</div>
+          <div style="font-size:12px;color:var(--text-soft);" id="collRateSub">$0 of $0 owed</div>
+        </div>
+        <div style="background:var(--paper);border-radius:999px;height:8px;margin-top:10px;overflow:hidden;">
+          <div id="collRateBar" style="background:var(--gold);height:100%;width:0%;"></div>
+        </div>
+        <p style="font-size:11.5px;color:var(--text-soft);margin:10px 0 0 0;" data-i18n="collRateNote">This is the number to watch during validation. If clients recover money and don't pay, the model needs adjusting before more is invested in software.</p>
+      </div>
+
+      <div class="section-title" data-i18n="followupTitle">Needs follow up</div>
+      <div class="card" id="followupCard"></div>
+
+      <div class="section-title" data-i18n="topLeadsTitle">Top leads</div>
+      <div class="card" id="topLeadsCard"></div>
+    </div>
+
+    <!-- CASES -->
+    <div class="view" id="view-cases">
+      <div class="toolbar">
+        <button class="btn gold" onclick="openCaseModal()" data-i18n="newLead">+ New lead</button>
+        <button class="btn ghost" onclick="document.getElementById('csvFile').click()" data-i18n="importBtn">Import CSV</button>
+        <input type="file" id="csvFile" accept=".csv" style="display:none;" onchange="handleCsv(event)">
+      </div>
+      <div class="toolbar">
+        <input type="search" id="caseSearch" placeholder="Search name or city" oninput="renderCases()">
+        <select id="caseFilter" onchange="renderCases()">
+          <option value="" data-i18n="fAll">All statuses</option>
+        </select>
+      </div>
+      <div class="section-title" data-i18n="pipelineTitle">Pipeline</div>
+      <div class="card" id="casesCard"></div>
+    </div>
+
+    <!-- BILLING -->
+    <div class="view" id="view-billing">
+      <div class="section-title" data-i18n="billingTitle">Fees owed and collected</div>
+      <div class="card" id="billingCard"></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="view" id="view-reports">
+      <div class="section-title" data-i18n="reportsTitle">Business validation metrics</div>
+      <div class="kpis">
+        <div class="kpi"><div class="num" id="mContactSuccess">0%</div><div class="lbl" data-i18n="mContactSuccess">Contact success</div></div>
+        <div class="kpi"><div class="num" id="mAgreementConv">0%</div><div class="lbl" data-i18n="mAgreementConv">Agreement conversion</div></div>
+        <div class="kpi"><div class="num" id="mRecoveryRate">0%</div><div class="lbl" data-i18n="mRecoveryRate">Recovery rate</div></div>
+        <div class="kpi"><div class="num" id="mLeadConv">0%</div><div class="lbl" data-i18n="mConversionLead">Lead to signed</div></div>
+      </div>
+      <div class="section-title" data-i18n="mAverages">Averages</div>
+      <div class="card">
+        <div class="row-between"><span data-i18n="mAvgRecovery">Average recovery</span><b id="mAvgRecoveryVal">$0</b></div>
+        <div class="row-between" style="margin-top:8px;"><span data-i18n="mAvgFee">Average fee</span><b id="mAvgFeeVal">$0</b></div>
+        <div class="row-between" style="margin-top:8px;"><span data-i18n="mCases">Total cases tracked</span><b id="mCasesVal">0</b></div>
+      </div>
+      <div class="section-title" data-i18n="mRevenueByMonth">Fees earned by month</div>
+      <div class="card" id="revenueByMonthCard"></div>
+    </div>
+
+    <!-- OUTREACH -->
+    <div class="view" id="view-outreach">
+      <div class="section-title" data-i18n="outreachTitle">Outreach template</div>
+      <div class="card">
+        <p style="font-size:12.5px;color:var(--text-soft);margin-top:0;" data-i18n="outreachNote">Copy and personalize. Never state a dollar amount unless the record has been verified against the claimant's identity.</p>
+        <div class="agreement-box" id="outreachText"></div>
+        <button class="btn ghost sm" style="margin-top:10px;" onclick="copyText('outreachText')" data-i18n="copyBtn">Copy text</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="view" id="view-settings">
+      <div class="section-title" data-i18n="settingsTitle">Settings</div>
+      <div class="card">
+        <label data-i18n="feeCapLabel">Standard fee percentage (max 10%, Property Code 74.507)</label>
+        <input type="number" id="settingFee" min="1" max="10" step="0.5" value="10" onchange="saveSettings()">
+        <label data-i18n="thresholdLabel">Minimum recovery value to qualify a lead</label>
+        <input type="number" id="settingThreshold" min="0" step="100" value="2500" onchange="saveSettings()">
+      </div>
+      <div class="section-title" data-i18n="lockTitle">Screen lock</div>
+      <div class="card">
+        <label data-i18n="workspaceLabel">Workspace name</label>
+        <input id="settingWorkspace" placeholder="Pronto Recovery" onchange="saveWorkspace()">
+        <button class="btn ghost block" style="margin-top:12px;" onclick="changePin()" data-i18n="changePinBtn">Change PIN</button>
+        <button class="btn ghost block" style="margin-top:8px;color:var(--rust);" onclick="removePin()" data-i18n="removePinBtn">Remove PIN</button>
+      </div>
+      <div class="section-title" data-i18n="dataTitle">Data</div>
+      <div class="card">
+        <button class="btn ghost block" onclick="exportData()" data-i18n="exportBtn">Export all data (JSON)</button>
+        <button class="btn ghost block" style="margin-top:8px;" onclick="document.getElementById('restoreFile').click()" data-i18n="importDataBtn">Restore from export (JSON)</button>
+        <input type="file" id="restoreFile" accept=".json" style="display:none;" onchange="handleRestore(event)">
+        <button class="btn ghost block" style="margin-top:8px;color:var(--rust);" onclick="clearData()" data-i18n="clearBtn">Clear all data</button>
+        <p style="font-size:11px;color:var(--text-soft);margin-top:10px;" data-i18n="storageNote">Data is stored locally in this browser only. This is a Phase 0/1 validation build; connect Firebase before multi-user or production use.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="legal" data-i18n="footerLegal">
+    This tool does not file claims, hold funds, or act under a power of attorney to receive payment. Fees are contracted with, and collected from, the claimant only after the claimant confirms recovery.
+  </footer>
+</div>
+
+<!-- CASE MODAL -->
+<div class="modal-bg" id="caseModalBg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle" data-i18n="newLead">New lead</h3>
+      <button class="close-x" onclick="closeModal('caseModalBg')">&times;</button>
+    </div>
+
+    <input type="hidden" id="caseId">
+
+    <label data-i18n="fOwner">Owner / claimant name</label>
+    <input id="fOwner" placeholder="Maria Garcia">
+
+    <div class="grid2">
+      <div>
+        <label data-i18n="fValue">Estimated recovery ($)</label>
+        <input id="fValue" type="number" min="0" step="50" oninput="updateFeePreview()">
+      </div>
+      <div>
+        <label data-i18n="fCity">City</label>
+        <input id="fCity" placeholder="Round Rock">
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label data-i18n="fType">Property type</label>
+        <select id="fType" onchange="recalcScore()">
+          <option value="cash" data-i18n="tCash">Cash / bank account</option>
+          <option value="mineral" data-i18n="tMineral">Mineral proceeds</option>
+          <option value="securities" data-i18n="tSecurities">Securities</option>
+          <option value="insurance" data-i18n="tInsurance">Insurance proceeds</option>
+          <option value="deceased" data-i18n="tDeceased">Deceased owner / heir</option>
+          <option value="other" data-i18n="tOther">Other</option>
+        </select>
+      </div>
+      <div>
+        <label data-i18n="fNextAction">Next action date</label>
+        <input id="fNextAction" type="date">
+      </div>
+    </div>
+
+    <label data-i18n="fStatus">Pipeline status</label>
+    <select id="fStatus">
+      <option value="new" data-i18n="sNew">New</option>
+      <option value="researching" data-i18n="sResearching">Researching</option>
+      <option value="contact_attempted" data-i18n="sContactAttempted">Contact attempted</option>
+      <option value="contacted" data-i18n="sContacted">Contacted</option>
+      <option value="interested" data-i18n="sInterested">Interested</option>
+      <option value="agreement_sent" data-i18n="sAgreementSent">Agreement sent</option>
+      <option value="agreement_signed" data-i18n="sAgreementSigned">Agreement signed</option>
+      <option value="documents_pending" data-i18n="sDocsPending">Documents pending</option>
+      <option value="claim_filed" data-i18n="sClaimFiled">Claimant filed claim</option>
+      <option value="claim_review" data-i18n="sClaimReview">Claim under review</option>
+      <option value="approved" data-i18n="sApproved">Approved</option>
+      <option value="recovery_confirmed" data-i18n="sRecoveryConfirmed">Recovery confirmed</option>
+      <option value="fee_due" data-i18n="sFeeDue">Fee due</option>
+      <option value="paid" data-i18n="sPaid">Paid</option>
+      <option value="closed" data-i18n="sClosed">Case closed</option>
+    </select>
+
+    <label data-i18n="fContact">Contact info</label>
+    <input id="fContact" placeholder="phone / email">
+
+    <label data-i18n="fNotes">Research notes</label>
+    <textarea id="fNotes"></textarea>
+
+    <div class="section-title" data-i18n="scoringTitle" style="margin-top:18px;">Match scoring</div>
+    <div class="score-badge-row">
+      <div class="big" id="scoreBig">50</div>
+      <div class="hint" style="margin-top:0;" data-i18n="scoringHint">Check the factors that apply. The score updates automatically and you can still fine-tune it below.</div>
+    </div>
+    <div id="scoringFactors"></div>
+    <label data-i18n="fScore">Match score (0 to 100, adjustable)</label>
+    <input id="fScore" type="number" min="0" max="100" value="50" oninput="document.getElementById('scoreBig').textContent=this.value">
+
+    <div class="section-title" data-i18n="feePreviewTitle" style="margin-top:18px;">Fee preview</div>
+    <div class="fee-split">
+      <div><div class="v" id="pvGross">$0</div><div class="l" data-i18n="lGross">Recovery</div></div>
+      <div><div class="v" id="pvFee">$0</div><div class="l" data-i18n="lFee">Your fee</div></div>
+      <div><div class="v" id="pvNet">$0</div><div class="l" data-i18n="lNet">Client net</div></div>
+    </div>
+
+    <button class="btn gold block" style="margin-top:14px;" onclick="saveCase()" data-i18n="saveBtn">Save case</button>
+
+    <div id="caseDetailExtras" style="display:none;">
+      <div class="section-title" data-i18n="docsTitle">Documents</div>
+      <div class="card" id="docChecklist"></div>
+
+      <div class="section-title" data-i18n="agreementTitle">Agreement</div>
+      <div class="card">
+        <div class="agreement-box" id="agreementText"></div>
+        <div class="toolbar" style="margin-top:10px;margin-bottom:0;">
+          <button class="btn ghost sm" onclick="copyText('agreementText')" data-i18n="copyBtn">Copy text</button>
+          <button class="btn ghost sm" onclick="printText('agreementText')" data-i18n="printBtn">Print</button>
+        </div>
+      </div>
+
+      <button class="btn ghost block" onclick="openClientView(document.getElementById('caseId').value)" data-i18n="clientViewBtn">Open client view</button>
+
+      <div class="section-title" data-i18n="collectionTitle">Collection tracking</div>
+      <div class="card" id="collectionCard"></div>
+
+      <div class="section-title" data-i18n="activityTitle">Activity log</div>
+      <div class="card">
+        <div class="grid2">
+          <input id="logNote" placeholder="Called claimant, left voicemail">
+          <button class="btn ghost" onclick="addLog()" data-i18n="addLogBtn">Add entry</button>
+        </div>
+        <div class="log" id="logList"></div>
+      </div>
+
+      <button class="btn ghost block" style="margin-top:14px;color:var(--rust);" onclick="deleteCase()" data-i18n="deleteBtn">Delete case</button>
+    </div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<script>
+/* ---------- Firebase (optional cloud sync) ----------
+   Paste your Firebase web app config below to turn on multi device sync.
+   Leave it as is and the app keeps working exactly as before, saved only
+   in this browser's local storage. Steps to enable:
+   1. console.firebase.google.com -> create project -> add a web app
+   2. Build > Authentication > Sign in method > enable Email/Password
+   3. Build > Firestore Database > create database (production mode)
+   3b. Build > Storage > get started (for document uploads), Rules, paste:
+        rules_version = '2';
+        service firebase.storage {
+          match /b/{bucket}/o {
+            match /users/{uid}/{allPaths=**} {
+              allow read, write: if request.auth != null && request.auth.uid == uid;
+            }
+          }
+        }
+   4. Firestore Rules, paste:
+        rules_version = '2';
+        service cloud.firestore {
+          match /databases/{database}/documents {
+            match /users/{uid}/{document=**} {
+              allow read, write: if request.auth != null && request.auth.uid == uid;
+            }
+          }
+        }
+   5. Paste the config object below.
+*/
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+const FIREBASE_ENABLED = !!(firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY");
+let fbAuth = null, fbDb = null, fbStorage = null, currentUser = null, unsubCases = null;
+if(FIREBASE_ENABLED){
+  firebase.initializeApp(firebaseConfig);
+  fbAuth = firebase.auth();
+  fbDb = firebase.firestore();
+  fbStorage = firebase.storage();
+}
+function workspaceToEmail(ws){
+  return (ws||'default').toLowerCase().replace(/[^a-z0-9]/g,'') + '@pronto-recovery.local';
+}
+</script>
+<script>
+/* ---------- i18n ---------- */
+const I18N = {
+en:{
+  brandName:"Pronto Recovery", brandSub:"Texas unclaimed property research and recovery assistance",
+  tabDash:"Dashboard", tabCases:"Cases", tabBilling:"Billing", tabOutreach:"Outreach", tabSettings:"Settings",
+  discTitle:"How Pronto Recovery gets paid:",
+  discBody:"The Texas Comptroller pays the claimant directly. Pronto Recovery never receives, holds, or routes the state's payment. The claimant pays the contracted fee separately after they confirm they were paid, per the signed agreement, capped at 10% under Property Code Section 74.507.",
+  kpiPotential:"Potential recovery", kpiActive:"Active cases", kpiRecovered:"Recovered to clients", kpiCollected:"Fees collected",
+  collRateTitle:"Collection rate", collRateNote:"This is the number to watch during validation. If clients recover money and don't pay, the model needs adjusting before more is invested in software.",
+  followupTitle:"Needs follow up", topLeadsTitle:"Top leads", newLead:"New lead", pipelineTitle:"Pipeline",
+  importBtn:"Import CSV", fAll:"All statuses",
+  billingTitle:"Fees owed and collected",
+  outreachTitle:"Outreach template", outreachNote:"Copy and personalize. Never state a dollar amount unless the record has been verified against the claimant's identity.", copyBtn:"Copy text", printBtn:"Print",
+  settingsTitle:"Settings", feeCapLabel:"Standard fee percentage (max 10%, Property Code 74.507)", thresholdLabel:"Minimum recovery value to qualify a lead",
+  lockTitle:"Screen lock", changePinBtn:"Change PIN", removePinBtn:"Remove PIN", workspaceLabel:"Workspace name",
+  dataTitle:"Data", exportBtn:"Export all data (JSON)", importDataBtn:"Restore from export (JSON)", clearBtn:"Clear all data",
+  storageNote:"Data is stored locally in this browser only. This is a Phase 0/1 validation build; connect Firebase before multi-user or production use.",
+  tabReports:"Reports", reportsTitle:"Business validation metrics",
+  mContactSuccess:"Contact success", mAgreementConv:"Agreement conversion", mRecoveryRate:"Recovery rate", mConversionLead:"Lead to signed",
+  mAverages:"Averages", mAvgRecovery:"Average recovery", mAvgFee:"Average fee", mCases:"Total cases tracked", mRevenueByMonth:"Fees earned by month",
+  clientViewBtn:"Open client view", cvYourCase:"Your recovery case", cvPotential:"Potential recovery", cvFee:"Pronto Recovery fee", cvNet:"Estimated client net",
+  cvPropertyIdentified:"Property identified", cvIdentityVerified:"Identity verified", cvAgreementSigned:"Agreement signed", cvDocsReceived:"Documents received",
+  cvClaimPending:"Claim submitted, pending", cvStateReview:"State review", cvRecoveryCompleted:"Recovery completed", cvFeePaid:"Fee paid",
+  noRevenue:"No fees earned yet.",
+  uploadBtn:"Upload", noFiles:"No files uploaded yet.", deleteFileBtn:"Remove", needsCloudNote:"Enable cloud sync (Settings, or the config note in the file) to store and share documents.",
+  footerLegal:"This tool does not file claims, hold funds, or act under a power of attorney to receive payment. Fees are contracted with, and collected from, the claimant only after the claimant confirms recovery.",
+  fOwner:"Owner / claimant name", fValue:"Estimated recovery ($)", fCity:"City", fType:"Property type",
+  tCash:"Cash / bank account", tMineral:"Mineral proceeds", tSecurities:"Securities", tInsurance:"Insurance proceeds", tDeceased:"Deceased owner / heir", tOther:"Other",
+  fNextAction:"Next action date", fStatus:"Pipeline status",
+  sNew:"New", sResearching:"Researching", sContactAttempted:"Contact attempted", sContacted:"Contacted", sInterested:"Interested",
+  sAgreementSent:"Agreement sent", sAgreementSigned:"Agreement signed", sDocsPending:"Documents pending",
+  sClaimFiled:"Claimant filed claim", sClaimReview:"Claim under review", sApproved:"Approved",
+  sRecoveryConfirmed:"Recovery confirmed", sFeeDue:"Fee due", sPaid:"Paid", sClosed:"Case closed",
+  fContact:"Contact info", fNotes:"Research notes",
+  scoringTitle:"Match scoring", scoringHint:"Check the factors that apply. The score updates automatically and you can still fine-tune it below.",
+  factExact:"Exact name match", factAddr:"Address match", factCity:"City match", factHist:"Historical address match",
+  factMulti:"Multiple property records", factHigh:"High value property ($10,000+)", factContact:"Verifiable contact information",
+  factCommon:"Extremely common name", factNoGeo:"No geographic match", factDocs:"Insufficient documentation",
+  fScore:"Match score (0 to 100, adjustable)", feePreviewTitle:"Fee preview",
+  lGross:"Recovery", lFee:"Your fee", lNet:"Client net", saveBtn:"Save case",
+  docsTitle:"Documents", agreementTitle:"Agreement", collectionTitle:"Collection tracking", activityTitle:"Activity log", addLogBtn:"Add entry", deleteBtn:"Delete case",
+  emptyCases:"No cases yet. Add your first lead to start tracking it through the pipeline.", emptyFollowup:"Nothing due. Set a next action date on a case to track follow ups here.",
+  docGovId:"Government ID", docProofAddr:"Proof of address", docOwnership:"Supporting ownership documentation",
+  docEstateFlag:"Estate/heir review required, additional heirship documentation needed",
+  invSent:"Invoice sent", rem1:"Reminder 1 sent", rem2:"Reminder 2 sent", finalNotice:"Final notice sent", paidDate:"Payment received",
+  invoiceText:"Generated invoice", markSent:"Mark sent today", markPaid:"Mark paid today", clear:"Clear",
+  csvOk:"rows imported", csvBad:"Could not read that file. Expected columns: Name, Value, City, PropertyType", csvDup:"duplicates skipped",
+  pinSetTitle:"Set a screen lock PIN", pinSetSub:"This is a local screen lock only, not encryption. Anyone with browser developer tools could still see the data. Use it as light protection on a shared device.",
+  pinEnterTitle:"Enter your PIN", pinEnterSub:"Local screen lock for this device.",
+  pinConfirmPlaceholder:"confirm", pinContinue:"Continue", pinWrong:"Incorrect PIN.", pinMismatch:"PINs did not match, try again.",
+  overdue:"overdue",
+},
+es:{
+  brandName:"Pronto Recovery", brandSub:"Investigación y asistencia en la recuperación de bienes no reclamados en Texas",
+  tabDash:"Panel", tabCases:"Casos", tabBilling:"Cobros", tabOutreach:"Contacto", tabSettings:"Ajustes",
+  discTitle:"Cómo cobra Pronto Recovery:",
+  discBody:"El Contralor de Texas paga directamente al reclamante. Pronto Recovery nunca recibe, retiene ni gestiona el pago del estado. El cliente paga la comisión contratada por separado, después de confirmar que recibió su pago, según el acuerdo firmado, con un tope del 10% bajo la Sección 74.507 del Código de Propiedad.",
+  kpiPotential:"Recuperación potencial", kpiActive:"Casos activos", kpiRecovered:"Recuperado para clientes", kpiCollected:"Comisiones cobradas",
+  collRateTitle:"Tasa de cobro", collRateNote:"Este es el número a vigilar durante la validación. Si los clientes recuperan dinero y no pagan, el modelo necesita ajustarse antes de invertir más en el software.",
+  followupTitle:"Requiere seguimiento", topLeadsTitle:"Casos principales", newLead:"Nuevo caso potencial", pipelineTitle:"Flujo de trabajo",
+  importBtn:"Importar CSV", fAll:"Todos los estados",
+  billingTitle:"Comisiones pendientes y cobradas",
+  outreachTitle:"Plantilla de contacto", outreachNote:"Copie y personalice. Nunca indique una cantidad exacta a menos que el registro esté verificado con la identidad del reclamante.", copyBtn:"Copiar texto", printBtn:"Imprimir",
+  settingsTitle:"Ajustes", feeCapLabel:"Porcentaje de comisión estándar (máximo 10%, Sección 74.507)", thresholdLabel:"Valor mínimo de recuperación para calificar un caso potencial",
+  lockTitle:"Bloqueo de pantalla", changePinBtn:"Cambiar PIN", removePinBtn:"Eliminar PIN", workspaceLabel:"Nombre del espacio de trabajo",
+  dataTitle:"Datos", exportBtn:"Exportar todos los datos (JSON)", importDataBtn:"Restaurar desde exportación (JSON)", clearBtn:"Borrar todos los datos",
+  storageNote:"Los datos se guardan localmente solo en este navegador. Esta es una versión de validación de Fase 0/1, conecte Firebase antes de uso multiusuario o de producción.",
+  tabReports:"Reportes", reportsTitle:"Métricas de validación del negocio",
+  mContactSuccess:"Éxito de contacto", mAgreementConv:"Conversión de acuerdos", mRecoveryRate:"Tasa de recuperación", mConversionLead:"De caso potencial a firmado",
+  mAverages:"Promedios", mAvgRecovery:"Recuperación promedio", mAvgFee:"Comisión promedio", mCases:"Total de casos registrados", mRevenueByMonth:"Comisiones ganadas por mes",
+  clientViewBtn:"Abrir vista del cliente", cvYourCase:"Su caso de recuperación", cvPotential:"Recuperación potencial", cvFee:"Comisión de Pronto Recovery", cvNet:"Neto estimado del cliente",
+  cvPropertyIdentified:"Propiedad identificada", cvIdentityVerified:"Identidad verificada", cvAgreementSigned:"Acuerdo firmado", cvDocsReceived:"Documentos recibidos",
+  cvClaimPending:"Reclamo presentado, pendiente", cvStateReview:"Revisión estatal", cvRecoveryCompleted:"Recuperación completada", cvFeePaid:"Comisión pagada",
+  noRevenue:"Aún no se han generado comisiones.",
+  uploadBtn:"Subir", noFiles:"Aún no hay archivos subidos.", deleteFileBtn:"Quitar", needsCloudNote:"Active la sincronización en la nube (Ajustes, o la nota de configuración en el archivo) para guardar y compartir documentos.",
+  footerLegal:"Esta herramienta no presenta reclamos, no retiene fondos ni actúa bajo un poder notarial para recibir pagos. Las comisiones se contratan y se cobran del reclamante solo después de que confirme su recuperación.",
+  fOwner:"Nombre del propietario / reclamante", fValue:"Recuperación estimada ($)", fCity:"Ciudad", fType:"Tipo de bien",
+  tCash:"Efectivo / cuenta bancaria", tMineral:"Regalías minerales", tSecurities:"Valores bursátiles", tInsurance:"Seguro", tDeceased:"Propietario fallecido / heredero", tOther:"Otro",
+  fNextAction:"Fecha de próxima acción", fStatus:"Estado del proceso",
+  sNew:"Nuevo", sResearching:"Investigando", sContactAttempted:"Intento de contacto", sContacted:"Contactado", sInterested:"Interesado",
+  sAgreementSent:"Acuerdo enviado", sAgreementSigned:"Acuerdo firmado", sDocsPending:"Documentos pendientes",
+  sClaimFiled:"Reclamo presentado por el cliente", sClaimReview:"Reclamo en revisión", sApproved:"Aprobado",
+  sRecoveryConfirmed:"Recuperación confirmada", sFeeDue:"Comisión pendiente de pago", sPaid:"Pagado", sClosed:"Caso cerrado",
+  fContact:"Información de contacto", fNotes:"Notas de investigación",
+  scoringTitle:"Puntaje de coincidencia", scoringHint:"Marque los factores que apliquen. El puntaje se actualiza automáticamente y aún puede ajustarlo abajo.",
+  factExact:"Coincidencia exacta de nombre", factAddr:"Coincidencia de dirección", factCity:"Coincidencia de ciudad", factHist:"Coincidencia de dirección histórica",
+  factMulti:"Múltiples registros de propiedad", factHigh:"Propiedad de alto valor ($10,000+)", factContact:"Información de contacto verificable",
+  factCommon:"Nombre extremadamente común", factNoGeo:"Sin coincidencia geográfica", factDocs:"Documentación insuficiente",
+  fScore:"Puntaje de coincidencia (0 a 100, ajustable)", feePreviewTitle:"Vista previa de la comisión",
+  lGross:"Recuperación", lFee:"Su comisión", lNet:"Neto del cliente", saveBtn:"Guardar caso",
+  docsTitle:"Documentos", agreementTitle:"Acuerdo", collectionTitle:"Seguimiento de cobro", activityTitle:"Registro de actividad", addLogBtn:"Agregar entrada", deleteBtn:"Eliminar caso",
+  emptyCases:"Aún no hay casos. Agregue su primer caso potencial para darle seguimiento en el proceso.", emptyFollowup:"Nada pendiente. Ponga una fecha de próxima acción en un caso para verlo aquí.",
+  docGovId:"Identificación oficial", docProofAddr:"Comprobante de domicilio", docOwnership:"Documentación de propiedad",
+  docEstateFlag:"Revisión de herencia requerida, se necesita documentación adicional de herederos",
+  invSent:"Factura enviada", rem1:"Recordatorio 1 enviado", rem2:"Recordatorio 2 enviado", finalNotice:"Aviso final enviado", paidDate:"Pago recibido",
+  invoiceText:"Factura generada", markSent:"Marcar enviado hoy", markPaid:"Marcar pagado hoy", clear:"Borrar",
+  csvOk:"filas importadas", csvBad:"No se pudo leer el archivo. Columnas esperadas: Name, Value, City, PropertyType", csvDup:"duplicados omitidos",
+  pinSetTitle:"Configure un PIN de bloqueo", pinSetSub:"Este es solo un bloqueo local de pantalla, no encriptación. Cualquiera con herramientas de desarrollador del navegador aún podría ver los datos. Úselo como protección ligera en un dispositivo compartido.",
+  pinEnterTitle:"Ingrese su PIN", pinEnterSub:"Bloqueo de pantalla local para este dispositivo.",
+  pinConfirmPlaceholder:"confirmar", pinContinue:"Continuar", pinWrong:"PIN incorrecto.", pinMismatch:"Los PIN no coinciden, intente de nuevo.",
+  overdue:"vencido",
+},
+};
+let LANG = localStorage.getItem('pr_lang') || 'en';
+function t(key){ return (I18N[LANG] && I18N[LANG][key]) || (I18N.en[key]) || key; }
+
+const FACTOR_DEFS = [
+  {key:'exact', label:'factExact', pts:15},
+  {key:'addr', label:'factAddr', pts:10},
+  {key:'city', label:'factCity', pts:8},
+  {key:'hist', label:'factHist', pts:7},
+  {key:'multi', label:'factMulti', pts:8},
+  {key:'high', label:'factHigh', pts:7},
+  {key:'contact', label:'factContact', pts:5},
+  {key:'common', label:'factCommon', pts:-15},
+  {key:'noGeo', label:'factNoGeo', pts:-10},
+  {key:'docs', label:'factDocs', pts:-10},
+];
+
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.getAttribute('data-i18n')); });
+  document.getElementById('langEN').classList.toggle('active', LANG==='en');
+  document.getElementById('langES').classList.toggle('active', LANG==='es');
+  buildStatusFilter();
+  buildScoringFactors();
+  renderOutreach(); renderDashboard(); renderCases(); renderBilling();
+}
+function setLang(l){ LANG=l; localStorage.setItem('pr_lang', l); applyI18n(); }
+
+/* ---------- PIN gate ---------- */
+let PIN_MODE = 'signin';
+function togglePinMode(){
+  PIN_MODE = PIN_MODE === 'signin' ? 'signup' : 'signin';
+  setPinModeUI();
+}
+function setPinModeUI(){
+  const confirmInput = document.getElementById('pinConfirm');
+  const toggle = document.getElementById('pinToggle');
+  document.getElementById('pinErr').textContent = '';
+  if(PIN_MODE === 'signup'){
+    document.getElementById('pinTitle').textContent = t('pinSetTitle');
+    document.getElementById('pinSub').textContent = t('pinSetSub');
+    confirmInput.style.display = 'block';
+    confirmInput.placeholder = t('pinConfirmPlaceholder');
+    document.getElementById('pinBtn').textContent = LANG==='es' ? 'Crear espacio de trabajo' : 'Create workspace';
+    toggle.textContent = LANG==='es' ? 'Ya tengo un espacio de trabajo' : 'I already have a workspace';
+  } else {
+    document.getElementById('pinTitle').textContent = t('pinEnterTitle');
+    document.getElementById('pinSub').textContent = t('pinEnterSub');
+    confirmInput.style.display = 'none';
+    document.getElementById('pinBtn').textContent = t('pinContinue');
+    toggle.textContent = LANG==='es' ? 'Primera vez, crear un espacio de trabajo' : 'First time, create a workspace';
+  }
+}
+function initPinGate(){
+  if(FIREBASE_ENABLED){
+    document.getElementById('workspaceInput').style.display = 'block';
+    document.getElementById('workspaceInput').placeholder = LANG==='es' ? 'Nombre del espacio de trabajo' : 'Workspace name';
+    document.getElementById('pinToggle').style.display = 'block';
+    setPinModeUI();
+    return;
+  }
+  const pin = localStorage.getItem('pr_pin');
+  const confirmInput = document.getElementById('pinConfirm');
+  const wsInput = document.getElementById('workspaceInput');
+  if(!pin){
+    document.getElementById('pinTitle').textContent = t('pinSetTitle');
+    document.getElementById('pinSub').textContent = t('pinSetSub');
+    confirmInput.style.display = 'block';
+    confirmInput.placeholder = t('pinConfirmPlaceholder');
+    wsInput.style.display = 'block';
+    wsInput.placeholder = LANG==='es' ? 'Nombre del espacio de trabajo' : 'Workspace name';
+  } else {
+    document.getElementById('pinTitle').textContent = t('pinEnterTitle');
+    const ws = localStorage.getItem('pr_workspace');
+    document.getElementById('pinSub').textContent = ws ? ws : t('pinEnterSub');
+    confirmInput.style.display = 'none';
+    wsInput.style.display = 'none';
+  }
+  document.getElementById('pinBtn').textContent = t('pinContinue');
+}
+function submitPin(){
+  const errEl = document.getElementById('pinErr');
+  errEl.textContent = '';
+  const val = document.getElementById('pinInput').value.trim();
+
+  if(FIREBASE_ENABLED){
+    const ws = document.getElementById('workspaceInput').value.trim();
+    if(!ws){ errEl.textContent = LANG==='es' ? 'Escriba un nombre de espacio de trabajo.' : 'Enter a workspace name.'; return; }
+    const minLen = 6;
+    if(val.length < minLen){ errEl.textContent = LANG==='es' ? 'El PIN debe tener al menos 6 caracteres.' : 'PIN must be at least 6 characters.'; return; }
+    const email = workspaceToEmail(ws);
+
+    if(PIN_MODE === 'signup'){
+      const conf = document.getElementById('pinConfirm').value.trim();
+      if(val !== conf){ errEl.textContent = t('pinMismatch'); return; }
+      fbAuth.createUserWithEmailAndPassword(email, val).then(cred=>{
+        localStorage.setItem('pr_workspace', ws);
+        onAuthReady(cred.user);
+      }).catch(err=>{
+        if(err.code === 'auth/email-already-in-use'){
+          errEl.textContent = LANG==='es' ? 'Ese espacio de trabajo ya existe. Use iniciar sesión.' : 'That workspace already exists. Use sign in instead.';
+        } else { errEl.textContent = err.message; }
+      });
+    } else {
+      fbAuth.signInWithEmailAndPassword(email, val).then(cred=>{
+        localStorage.setItem('pr_workspace', ws);
+        onAuthReady(cred.user);
+      }).catch(err=>{
+        if(err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential'){
+          errEl.textContent = LANG==='es' ? 'No se encontró ese espacio de trabajo. ¿Primera vez? Cree uno.' : "That workspace wasn't found. First time? Create one.";
+        } else if(err.code === 'auth/wrong-password'){
+          errEl.textContent = t('pinWrong');
+        } else { errEl.textContent = err.message; }
+      });
+    }
+    return;
+  }
+
+  const stored = localStorage.getItem('pr_pin');
+  if(!stored){
+    const conf = document.getElementById('pinConfirm').value.trim();
+    const ws = document.getElementById('workspaceInput').value.trim();
+    if(val.length<3){ return; }
+    if(val !== conf){ errEl.textContent = t('pinMismatch'); return; }
+    localStorage.setItem('pr_pin', val);
+    if(ws) localStorage.setItem('pr_workspace', ws);
+    unlockApp();
+  } else {
+    if(val === stored){ unlockApp(); }
+    else { errEl.textContent = t('pinWrong'); document.getElementById('pinInput').value=''; }
+  }
+}
+function onAuthReady(user){
+  currentUser = user;
+  loadSettingsFromCloud().then(()=>{
+    subscribeCases();
+    unlockApp();
+  });
+}
+function unlockApp(){
+  document.getElementById('pinGate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+function changePin(){
+  if(FIREBASE_ENABLED){
+    const next = prompt(LANG==='es'?'Nuevo PIN (mínimo 6 caracteres):':'New PIN (minimum 6 characters):');
+    if(next && next.trim().length>=6 && currentUser){
+      currentUser.updatePassword(next.trim()).then(()=>alert(LANG==='es'?'PIN actualizado.':'PIN updated.')).catch(e=>alert(e.message));
+    }
+    return;
+  }
+  const cur = prompt(LANG==='es'?'PIN actual:':'Current PIN:');
+  if(cur !== localStorage.getItem('pr_pin')){ alert(t('pinWrong')); return; }
+  const next = prompt(LANG==='es'?'Nuevo PIN:':'New PIN:');
+  if(next && next.trim().length>=3) localStorage.setItem('pr_pin', next.trim());
+}
+function removePin(){
+  if(FIREBASE_ENABLED){
+    alert(LANG==='es' ? 'En modo Firebase, cierre sesión desde el archivo de configuración del proyecto en su lugar.' : 'In Firebase mode, manage accounts from the Firebase console instead.');
+    return;
+  }
+  const cur = prompt(LANG==='es'?'PIN actual para confirmar:':'Current PIN to confirm:');
+  if(cur === localStorage.getItem('pr_pin')){ localStorage.removeItem('pr_pin'); alert(LANG==='es'?'PIN eliminado.':'PIN removed.'); }
+  else alert(t('pinWrong'));
+}
+
+/* ---------- Data layer ---------- */
+const STORE_KEY = 'pr_cases_v1';
+const SETTINGS_KEY = 'pr_settings_v1';
+function loadCases(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }catch(e){ return []; } }
+function saveCases(cases){ localStorage.setItem(STORE_KEY, JSON.stringify(cases)); }
+function loadSettings(){ try{ return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {feePct:10, threshold:2500}; }catch(e){ return {feePct:10, threshold:2500}; } }
+function saveSettingsToStore(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+let CASES = FIREBASE_ENABLED ? [] : loadCases();
+let SETTINGS = loadSettings();
+
+/* Cloud persistence, active only when FIREBASE_ENABLED and signed in.
+   Falls back to the local blob write whenever Firebase is off. */
+function db_setCase(caseObj){
+  if(FIREBASE_ENABLED && currentUser){
+    fbDb.collection('users').doc(currentUser.uid).collection('cases').doc(caseObj.id).set(caseObj)
+      .catch(err=>console.error('Save failed', err));
+  } else {
+    saveCases(CASES);
+  }
+}
+function db_deleteCase(id){
+  if(FIREBASE_ENABLED && currentUser){
+    fbDb.collection('users').doc(currentUser.uid).collection('cases').doc(id).delete()
+      .catch(err=>console.error('Delete failed', err));
+  } else {
+    saveCases(CASES);
+  }
+}
+function db_clearAll(){
+  if(FIREBASE_ENABLED && currentUser){
+    const batch = fbDb.batch();
+    CASES.forEach(c=> batch.delete(fbDb.collection('users').doc(currentUser.uid).collection('cases').doc(c.id)));
+    batch.commit().catch(err=>console.error('Clear failed', err));
+  } else {
+    saveCases(CASES);
+  }
+}
+function subscribeCases(){
+  if(unsubCases) unsubCases();
+  unsubCases = fbDb.collection('users').doc(currentUser.uid).collection('cases').onSnapshot(snap=>{
+    CASES = snap.docs.map(d=>d.data());
+    renderDashboard(); renderCases(); renderBilling(); renderReports();
+  }, err=>console.error('Sync error', err));
+}
+function loadSettingsFromCloud(){
+  if(!FIREBASE_ENABLED || !currentUser) return Promise.resolve();
+  return fbDb.collection('users').doc(currentUser.uid).collection('meta').doc('settings').get().then(doc=>{
+    if(doc.exists) SETTINGS = doc.data();
+    document.getElementById('settingFee').value = SETTINGS.feePct;
+    document.getElementById('settingThreshold').value = SETTINGS.threshold;
+  });
+}
+function db_saveSettings(){
+  if(FIREBASE_ENABLED && currentUser){
+    fbDb.collection('users').doc(currentUser.uid).collection('meta').doc('settings').set(SETTINGS)
+      .catch(err=>console.error('Settings save failed', err));
+  } else {
+    saveSettingsToStore(SETTINGS);
+  }
+}
+
+const STATUS_LABEL = {
+  new:'sNew', researching:'sResearching', contact_attempted:'sContactAttempted', contacted:'sContacted',
+  interested:'sInterested', agreement_sent:'sAgreementSent', agreement_signed:'sAgreementSigned',
+  documents_pending:'sDocsPending', claim_filed:'sClaimFiled', claim_review:'sClaimReview', approved:'sApproved',
+  recovery_confirmed:'sRecoveryConfirmed', fee_due:'sFeeDue', paid:'sPaid', closed:'sClosed'
+};
+const STATUS_COLOR = {
+  new:'#8B9490', researching:'#4A6670', contact_attempted:'#B8863D', contacted:'#B8863D', interested:'#4A6670',
+  agreement_sent:'#B8863D', agreement_signed:'#4A6670', documents_pending:'#A84A32', claim_filed:'#14312B',
+  claim_review:'#14312B', approved:'#4A6670', recovery_confirmed:'#4A6670', fee_due:'#A84A32', paid:'#4A6670', closed:'#8B9490'
+};
+
+function fmtMoney(n){ n = Number(n)||0; return '$' + n.toLocaleString('en-US', {maximumFractionDigits:0}); }
+function computeFee(c){
+  const pct = (c.feePercentage!=null ? c.feePercentage : SETTINGS.feePct) / 100;
+  const gross = Number(c.estimatedValue)||0;
+  const fee = Math.round(gross*pct);
+  return {gross, fee, net: gross-fee};
+}
+
+/* ---------- Nav ---------- */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===name));
+  if(name==='dashboard') renderDashboard();
+  if(name==='cases') renderCases();
+  if(name==='billing') renderBilling();
+  if(name==='reports') renderReports();
+  if(name==='outreach') renderOutreach();
+}
+
+function buildStatusFilter(){
+  const sel = document.getElementById('caseFilter');
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">${t('fAll')}</option>` + Object.keys(STATUS_LABEL).map(k=>`<option value="${k}">${t(STATUS_LABEL[k])}</option>`).join('');
+  sel.value = cur;
+}
+
+/* ---------- Dashboard ---------- */
+function renderDashboard(){
+  const active = CASES.filter(c=>!['closed','paid'].includes(c.status));
+  const potential = active.reduce((s,c)=>s+(Number(c.estimatedValue)||0),0);
+  const recoveredCases = CASES.filter(c=>c.recoveryConfirmed);
+  const recovered = recoveredCases.reduce((s,c)=>s+(Number(c.estimatedValue)||0),0);
+  let feesOwed=0, feesCollected=0;
+  recoveredCases.forEach(c=>{ const f=computeFee(c).fee; feesOwed+=f; if(c.collection && c.collection.paidDate) feesCollected+=f; });
+
+  document.getElementById('kpiPotential').textContent = fmtMoney(potential);
+  document.getElementById('kpiActive').textContent = active.length;
+  document.getElementById('kpiRecovered').textContent = fmtMoney(recovered);
+  document.getElementById('kpiCollected').textContent = fmtMoney(feesCollected);
+
+  const rate = feesOwed>0 ? Math.round((feesCollected/feesOwed)*100) : 0;
+  document.getElementById('collRate').textContent = rate+'%';
+  document.getElementById('collRateSub').textContent = fmtMoney(feesCollected)+' '+(LANG==='es'?'de':'of')+' '+fmtMoney(feesOwed)+' '+(LANG==='es'?'adeudado':'owed');
+  document.getElementById('collRateBar').style.width = rate+'%';
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = CASES.filter(c=>c.nextActionDate && !['closed','paid'].includes(c.status))
+    .sort((a,b)=> new Date(a.nextActionDate) - new Date(b.nextActionDate)).slice(0,6);
+  const fCard = document.getElementById('followupCard');
+  fCard.innerHTML = due.length===0 ? `<div class="empty"><div>${t('emptyFollowup')}</div></div>` : due.map(c=>caseRowHTML(c)).join('');
+
+  const top = [...CASES].filter(c=>!['closed','paid'].includes(c.status)).sort((a,b)=>(Number(b.matchScore)||0)-(Number(a.matchScore)||0)).slice(0,5);
+  const card = document.getElementById('topLeadsCard');
+  card.innerHTML = top.length===0 ? `<div class="empty"><div class="num">0</div><div>${t('emptyCases')}</div></div>` : top.map(c=>caseRowHTML(c)).join('');
+}
+
+/* ---------- Cases list ---------- */
+function scoreColor(score){ score=Number(score)||0; if(score>=85) return '#4A6670'; if(score>=60) return '#B8863D'; return '#A84A32'; }
+
+function caseRowHTML(c){
+  const today = new Date(); today.setHours(0,0,0,0);
+  let metaText = escapeHtml(c.city||'');
+  let dueClass = '';
+  if(c.nextActionDate){
+    const d = new Date(c.nextActionDate);
+    const overdue = d < today;
+    metaText = (metaText?metaText+' &middot; ':'') + d.toLocaleDateString() + (overdue?' ('+t('overdue')+')':'');
+    if(overdue) dueClass = 'due';
+  }
+  return `<div class="case-row" onclick="openCaseModal('${c.id}')">
+    <div class="score" style="background:${scoreColor(c.matchScore)}">${c.matchScore||0}</div>
+    <div class="case-main">
+      <div class="nm">${escapeHtml(c.ownerName||'—')}</div>
+      <div class="meta ${dueClass}">${metaText}</div>
+    </div>
+    <div class="case-amt">
+      <div class="val">${fmtMoney(c.estimatedValue)}</div>
+      <div class="status-pill" style="background:${STATUS_COLOR[c.status]}22;color:${STATUS_COLOR[c.status]}">${t(STATUS_LABEL[c.status])}</div>
+    </div>
+  </div>`;
+}
+
+function renderCases(){
+  const card = document.getElementById('casesCard');
+  const q = (document.getElementById('caseSearch').value||'').toLowerCase();
+  const f = document.getElementById('caseFilter').value;
+  let list = CASES.filter(c=>{
+    const matchQ = !q || (c.ownerName||'').toLowerCase().includes(q) || (c.city||'').toLowerCase().includes(q);
+    const matchF = !f || c.status===f;
+    return matchQ && matchF;
+  });
+  list = list.sort((a,b)=> new Date(b.updatedAt||0) - new Date(a.updatedAt||0));
+  card.innerHTML = list.length===0 ? `<div class="empty"><div class="num">0</div><div>${t('emptyCases')}</div></div>` : list.map(c=>caseRowHTML(c)).join('');
+}
+
+/* ---------- Billing ---------- */
+function renderBilling(){
+  const card = document.getElementById('billingCard');
+  const relevant = CASES.filter(c=>c.recoveryConfirmed);
+  if(relevant.length===0){ card.innerHTML = `<div class="empty"><div class="num">0</div><div>${t('emptyCases')}</div></div>`; return; }
+  card.innerHTML = relevant.map(c=>{
+    const fee = computeFee(c);
+    const paid = !!(c.collection && c.collection.paidDate);
+    return `<div class="case-row" onclick="openCaseModal('${c.id}')">
+      <div class="case-main">
+        <div class="nm">${escapeHtml(c.ownerName||'—')}</div>
+        <div class="meta">${fmtMoney(fee.gross)} ${LANG==='es'?'recuperado':'recovered'}</div>
+      </div>
+      <div class="case-amt">
+        <div class="val">${fmtMoney(fee.fee)}</div>
+        <div class="status-pill" style="background:${paid?'#4A667022':'#A84A3222'};color:${paid?'#4A6670':'#A84A32'}">
+          ${paid ? (LANG==='es'?'Pagado':'Paid') : (LANG==='es'?'Pendiente':'Outstanding')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- Reports ---------- */
+const PIPELINE_ORDER = ['new','researching','contact_attempted','contacted','interested','agreement_sent','agreement_signed',
+  'documents_pending','claim_filed','claim_review','approved','recovery_confirmed','fee_due','paid'];
+function stageIndex(status){ const i = PIPELINE_ORDER.indexOf(status); return i<0 ? 0 : i; }
+function pct(n,d){ return d>0 ? Math.round((n/d)*100) : 0; }
+
+function renderReports(){
+  const total = CASES.length;
+  const atLeastAttempted = CASES.filter(c=>stageIndex(c.status)>=stageIndex('contact_attempted') || c.status==='closed').length;
+  const atLeastContacted = CASES.filter(c=>stageIndex(c.status)>=stageIndex('contacted')).length;
+  const atLeastSent = CASES.filter(c=>stageIndex(c.status)>=stageIndex('agreement_sent')).length;
+  const atLeastSigned = CASES.filter(c=>stageIndex(c.status)>=stageIndex('agreement_signed')).length;
+  const recovered = CASES.filter(c=>c.recoveryConfirmed);
+
+  document.getElementById('mContactSuccess').textContent = pct(atLeastContacted, atLeastAttempted) + '%';
+  document.getElementById('mAgreementConv').textContent = pct(atLeastSigned, atLeastSent) + '%';
+  document.getElementById('mRecoveryRate').textContent = pct(recovered.length, atLeastSigned) + '%';
+  document.getElementById('mLeadConv').textContent = pct(atLeastSigned, total) + '%';
+
+  const avgRecovery = recovered.length ? Math.round(recovered.reduce((s,c)=>s+(Number(c.estimatedValue)||0),0)/recovered.length) : 0;
+  const avgFee = recovered.length ? Math.round(recovered.reduce((s,c)=>s+computeFee(c).fee,0)/recovered.length) : 0;
+  document.getElementById('mAvgRecoveryVal').textContent = fmtMoney(avgRecovery);
+  document.getElementById('mAvgFeeVal').textContent = fmtMoney(avgFee);
+  document.getElementById('mCasesVal').textContent = total;
+
+  const byMonth = {};
+  CASES.forEach(c=>{
+    const paidDate = c.collection && c.collection.paidDate;
+    if(!paidDate) return;
+    const key = paidDate.slice(0,7);
+    byMonth[key] = (byMonth[key]||0) + computeFee(c).fee;
+  });
+  const months = Object.keys(byMonth).sort().reverse();
+  const card = document.getElementById('revenueByMonthCard');
+  if(months.length===0){ card.innerHTML = `<div class="empty"><div>${t('noRevenue')}</div></div>`; return; }
+  card.innerHTML = months.map(m=>`<div class="row-between" style="padding:8px 0;border-bottom:1px solid var(--line);"><span>${m}</span><b>${fmtMoney(byMonth[m])}</b></div>`).join('');
+}
+
+/* ---------- Client view ---------- */
+function openClientView(id){
+  const c = CASES.find(x=>x.id===id); if(!c) return;
+  const fee = computeFee(c);
+  const steps = [
+    {key:'cvPropertyIdentified', done:true},
+    {key:'cvIdentityVerified', done: !!(c.documents && c.documents.govId)},
+    {key:'cvAgreementSigned', done: stageIndex(c.status)>=stageIndex('agreement_signed')},
+    {key:'cvDocsReceived', done: !!(c.documents && c.documents.govId && c.documents.proofAddr && c.documents.ownership)},
+    {key:'cvClaimPending', done: stageIndex(c.status)>=stageIndex('claim_filed')},
+    {key:'cvStateReview', done: stageIndex(c.status)>=stageIndex('claim_review')},
+    {key:'cvRecoveryCompleted', done: !!c.recoveryConfirmed},
+    {key:'cvFeePaid', done: !!(c.collection && c.collection.paidDate)},
+  ];
+  const stepsHtml = steps.map(s=>`<div style="padding:6px 0;">${s.done?'&#9989;':'&#11036;'} ${t(s.key)}</div>`).join('');
+  const html = `<!DOCTYPE html><html lang="${LANG}"><head><meta charset="UTF-8">
+    <title>${escapeHtml(c.ownerName||'')} — Pronto Recovery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+      body{font-family:'Inter',sans-serif;background:#EEF0EA;color:#14312B;margin:0;padding:28px 20px;}
+      .wrap{max-width:480px;margin:0 auto;}
+      h1{font-family:'Fraunces',serif;font-size:22px;margin:0 0 4px 0;}
+      .sub{color:rgba(20,49,43,0.6);font-size:13px;margin-bottom:20px;}
+      .card{background:#fff;border:1px solid rgba(20,49,43,0.12);border-radius:10px;padding:18px;margin-bottom:14px;}
+      .split{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;}
+      .split div{background:#EEF0EA;border-radius:8px;padding:10px 6px;}
+      .split .v{font-family:'Fraunces',serif;font-weight:700;font-size:16px;}
+      .split .l{font-size:10px;color:rgba(20,49,43,0.6);text-transform:uppercase;margin-top:2px;}
+      .foot{font-size:11px;color:rgba(20,49,43,0.55);line-height:1.6;margin-top:16px;}
+    </style></head><body><div class="wrap">
+    <h1>${t('cvYourCase')}</h1>
+    <div class="sub">${escapeHtml(c.ownerName||'')}</div>
+    <div class="card">
+      <div class="split">
+        <div><div class="v">${fmtMoney(fee.gross)}</div><div class="l">${t('cvPotential')}</div></div>
+        <div><div class="v">${fmtMoney(fee.fee)}</div><div class="l">${t('cvFee')}</div></div>
+        <div><div class="v">${fmtMoney(fee.net)}</div><div class="l">${t('cvNet')}</div></div>
+      </div>
+    </div>
+    <div class="card">${stepsHtml}</div>
+    <div class="foot">${t('footerLegal')}</div>
+    </div></body></html>`;
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+/* ---------- Outreach ---------- */
+function renderOutreach(){
+  const en = `Hello [Name],
+
+We are contacting you regarding a Texas unclaimed property record that appears to potentially match your name and identifying information.
+
+Pronto Recovery provides optional research and administrative assistance with unclaimed property recovery. You are not required to use our service, and the Texas Comptroller provides a free claim process at ClaimItTexas.gov.
+
+We would be happy to explain the record we found and walk you through the recovery process. There is no upfront cost. Our fee, capped at 10% under Texas law, is only owed after you successfully recover your property, and it is paid to us by you directly, not deducted from the state's payment to you.
+
+Reply to this message or call us if you would like more information.`;
+  const es = `Hola [Nombre],
+
+Nos comunicamos con usted respecto a un registro de bienes no reclamados en Texas que parece coincidir con su nombre e información de identificación.
+
+Pronto Recovery ofrece asistencia opcional de investigación y trámites para la recuperación de bienes no reclamados. No está obligado a usar nuestro servicio, y el Contralor de Texas ofrece un proceso de reclamo gratuito en ClaimItTexas.gov.
+
+Con gusto le explicamos el registro que encontramos y le acompañamos durante el proceso de recuperación. No hay costo inicial. Nuestra comisión, con un tope del 10% según la ley de Texas, se debe únicamente después de que usted recupere su propiedad con éxito, y usted nos la paga directamente, no se descuenta del pago que le hace el estado.
+
+Responda a este mensaje o llámenos si desea más información.`;
+  document.getElementById('outreachText').textContent = LANG==='es' ? es : en;
+}
+
+/* ---------- Scoring factors ---------- */
+function buildScoringFactors(){
+  const wrap = document.getElementById('scoringFactors');
+  wrap.innerHTML = FACTOR_DEFS.map(f=>`
+    <div class="checklist-item ${f.pts<0?'neg':''}">
+      <input type="checkbox" id="factor_${f.key}" onchange="recalcScore()">
+      <span>${t(f.label)} (${f.pts>0?'+':''}${f.pts})</span>
+    </div>`).join('');
+}
+function recalcScore(){
+  let score = 50;
+  const factors = {};
+  FACTOR_DEFS.forEach(f=>{
+    const checked = document.getElementById('factor_'+f.key).checked;
+    factors[f.key] = checked;
+    if(checked) score += f.pts;
+  });
+  const val = Number(document.getElementById('fValue').value)||0;
+  if(val>=10000 && !document.getElementById('factor_high').checked){
+    document.getElementById('factor_high').checked = true; factors.high = true; score += FACTOR_DEFS.find(f=>f.key==='high').pts;
+  }
+  score = Math.max(0, Math.min(100, score));
+  document.getElementById('fScore').value = score;
+  document.getElementById('scoreBig').textContent = score;
+  return factors;
+}
+
+/* ---------- Case modal ---------- */
+function openCaseModal(id){
+  document.getElementById('caseModalBg').classList.add('open');
+  const extras = document.getElementById('caseDetailExtras');
+  const title = document.getElementById('modalTitle');
+  buildScoringFactors();
+
+  if(id){
+    const c = CASES.find(x=>x.id===id);
+    title.textContent = c.ownerName || t('newLead');
+    document.getElementById('caseId').value = c.id;
+    document.getElementById('fOwner').value = c.ownerName||'';
+    document.getElementById('fValue').value = c.estimatedValue||'';
+    document.getElementById('fCity').value = c.city||'';
+    document.getElementById('fType').value = c.propertyType||'cash';
+    document.getElementById('fNextAction').value = c.nextActionDate||'';
+    document.getElementById('fStatus').value = c.status||'new';
+    document.getElementById('fContact').value = c.contactInfo||'';
+    document.getElementById('fNotes').value = c.notes||'';
+    document.getElementById('fScore').value = c.matchScore!=null ? c.matchScore : 50;
+    document.getElementById('scoreBig').textContent = document.getElementById('fScore').value;
+    const factors = c.scoringFactors || {};
+    FACTOR_DEFS.forEach(f=>{ document.getElementById('factor_'+f.key).checked = !!factors[f.key]; });
+    extras.style.display = 'block';
+    renderDocChecklist(c); renderAgreement(c); renderLog(c); renderCollection(c);
+  } else {
+    title.textContent = t('newLead');
+    document.getElementById('caseId').value = '';
+    ['fOwner','fValue','fCity','fNextAction','fContact','fNotes'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('fType').value = 'cash';
+    document.getElementById('fStatus').value = 'new';
+    document.getElementById('fScore').value = 50;
+    document.getElementById('scoreBig').textContent = '50';
+    extras.style.display = 'none';
+  }
+  updateFeePreview();
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function updateFeePreview(){
+  const val = Number(document.getElementById('fValue').value)||0;
+  const pct = SETTINGS.feePct/100;
+  const fee = Math.round(val*pct);
+  document.getElementById('pvGross').textContent = fmtMoney(val);
+  document.getElementById('pvFee').textContent = fmtMoney(fee);
+  document.getElementById('pvNet').textContent = fmtMoney(val-fee);
+}
+
+function saveCase(){
+  const id = document.getElementById('caseId').value || ('c_'+Date.now());
+  const isNew = !CASES.find(c=>c.id===id);
+  const ownerName = document.getElementById('fOwner').value.trim();
+  const city = document.getElementById('fCity').value.trim();
+  if(isNew && ownerName){
+    const dup = CASES.find(c=> (c.ownerName||'').trim().toLowerCase()===ownerName.toLowerCase() && (c.city||'').trim().toLowerCase()===city.toLowerCase());
+    if(dup){
+      const msg = LANG==='es'
+        ? 'Ya existe un caso con ese nombre y ciudad ('+t(STATUS_LABEL[dup.status])+'). ¿Guardar de todos modos?'
+        : 'A case with that name and city already exists ('+t(STATUS_LABEL[dup.status])+'). Save anyway?';
+      if(!confirm(msg)) return;
+    }
+  }
+  const existing = CASES.find(c=>c.id===id) || {id, createdAt:new Date().toISOString(), documents:{}, activityLog:[], collection:{}, recoveryConfirmed:false};
+  existing.ownerName = document.getElementById('fOwner').value.trim();
+  existing.estimatedValue = Number(document.getElementById('fValue').value)||0;
+  existing.city = document.getElementById('fCity').value.trim();
+  existing.propertyType = document.getElementById('fType').value;
+  existing.nextActionDate = document.getElementById('fNextAction').value || null;
+  const prevStatus = existing.status;
+  existing.status = document.getElementById('fStatus').value;
+  existing.contactInfo = document.getElementById('fContact').value.trim();
+  existing.notes = document.getElementById('fNotes').value.trim();
+  existing.matchScore = Number(document.getElementById('fScore').value)||0;
+  existing.scoringFactors = {};
+  FACTOR_DEFS.forEach(f=>{ existing.scoringFactors[f.key] = document.getElementById('factor_'+f.key).checked; });
+  existing.feePercentage = SETTINGS.feePct;
+  existing.updatedAt = new Date().toISOString();
+
+  if(['recovery_confirmed','fee_due','paid'].includes(existing.status)) existing.recoveryConfirmed = true;
+
+  if(!existing.documents){
+    existing.documents = {govId:false, proofAddr:false, ownership:false, estateFlag: existing.propertyType==='deceased'};
+  } else {
+    existing.documents.estateFlag = existing.propertyType==='deceased' || existing.documents.estateFlag;
+  }
+  if(!existing.activityLog) existing.activityLog = [];
+  if(!existing.collection) existing.collection = {};
+  if(prevStatus !== existing.status){
+    existing.activityLog.push({date:new Date().toISOString(), note:(LANG==='es'?'Estado cambiado a ':'Status changed to ')+t(STATUS_LABEL[existing.status])});
+  }
+  if(existing.status==='paid' && !existing.collection.paidDate){
+    existing.collection.paidDate = new Date().toISOString().slice(0,10);
+  }
+
+  if(!CASES.find(c=>c.id===id)) CASES.push(existing);
+  db_setCase(existing);
+  renderDashboard(); renderCases(); renderBilling();
+  closeModal('caseModalBg');
+}
+
+function deleteCase(){
+  const id = document.getElementById('caseId').value;
+  if(!id) return;
+  if(!confirm(LANG==='es'?'¿Eliminar este caso permanentemente?':'Delete this case permanently?')) return;
+  CASES = CASES.filter(c=>c.id!==id);
+  db_deleteCase(id);
+  closeModal('caseModalBg');
+  renderDashboard(); renderCases(); renderBilling();
+}
+
+/* ---------- Documents ---------- */
+function renderDocChecklist(c){
+  const docs = c.documents || {govId:false, proofAddr:false, ownership:false, estateFlag:false};
+  const items = [
+    {key:'govId', label:t('docGovId')}, {key:'proofAddr', label:t('docProofAddr')}, {key:'ownership', label:t('docOwnership')},
+  ];
+  let html = items.map(it=>`<div class="checklist-item">
+      <input type="checkbox" ${docs[it.key]?'checked':''} onchange="toggleDoc('${c.id}','${it.key}',this.checked)">
+      <span>${it.label}</span></div>`).join('');
+  if(docs.estateFlag){ html += `<div class="checklist-item neg"><span>&#9888; ${t('docEstateFlag')}</span></div>`; }
+
+  html += `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">`;
+  if(FIREBASE_ENABLED){
+    const files = c.uploadedFiles || [];
+    html += files.length===0 ? `<div class="hint" style="margin-bottom:8px;">${t('noFiles')}</div>` :
+      files.map(f=>`<div class="checklist-item">
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          <a href="${f.url}" target="_blank" style="color:var(--ink);text-decoration:underline;">${escapeHtml(f.name)}</a>
+        </span>
+        <button class="btn ghost sm" onclick="deleteDocFile('${c.id}','${encodeURIComponent(f.path)}')">${t('deleteFileBtn')}</button>
+      </div>`).join('');
+    html += `<div class="grid2" style="margin-top:10px;">
+        <input type="file" id="docFileInput_${c.id}">
+        <button class="btn ghost" onclick="uploadDocFile('${c.id}')">${t('uploadBtn')}</button>
+      </div>
+      <div class="hint" id="uploadStatus_${c.id}"></div>`;
+  } else {
+    html += `<div class="hint">${t('needsCloudNote')}</div>`;
+  }
+  html += `</div>`;
+
+  document.getElementById('docChecklist').innerHTML = html;
+}
+function toggleDoc(id, key, val){ const c = CASES.find(x=>x.id===id); if(!c) return; c.documents[key]=val; db_setCase(c); }
+function uploadDocFile(caseId){
+  const input = document.getElementById('docFileInput_'+caseId);
+  const file = input.files[0];
+  const statusEl = document.getElementById('uploadStatus_'+caseId);
+  if(!file || !currentUser) return;
+  statusEl.textContent = LANG==='es' ? 'Subiendo...' : 'Uploading...';
+  const path = `users/${currentUser.uid}/cases/${caseId}/${Date.now()}_${file.name}`;
+  fbStorage.ref(path).put(file)
+    .then(snap=>snap.ref.getDownloadURL())
+    .then(url=>{
+      const c = CASES.find(x=>x.id===caseId);
+      if(!c.uploadedFiles) c.uploadedFiles = [];
+      c.uploadedFiles.push({name:file.name, url, path, uploadedAt:new Date().toISOString()});
+      db_setCase(c);
+      statusEl.textContent = '';
+      renderDocChecklist(c);
+    })
+    .catch(err=>{ statusEl.textContent = err.message; });
+}
+function deleteDocFile(caseId, encodedPath){
+  const path = decodeURIComponent(encodedPath);
+  const c = CASES.find(x=>x.id===caseId); if(!c) return;
+  fbStorage.ref(path).delete().catch(()=>{}).finally(()=>{
+    c.uploadedFiles = (c.uploadedFiles||[]).filter(f=>f.path!==path);
+    db_setCase(c);
+    renderDocChecklist(c);
+  });
+}
+
+/* ---------- Agreement ---------- */
+function renderAgreement(c){
+  const fee = computeFee(c);
+  const dateStr = new Date().toLocaleDateString(LANG==='es'?'es-MX':'en-US');
+  const en = `PRONTO RECOVERY - UNCLAIMED PROPERTY RECOVERY ASSISTANCE AGREEMENT
+
+Date: ${dateStr}
+Claimant: ${c.ownerName||'[claimant legal name]'}
+
+Property identified: ${c.propertyType||'unclaimed property'} located under Texas Comptroller records, estimated value ${fmtMoney(fee.gross)}.
+
+Services provided: research, identity verification support, claim preparation assistance, and document organization to help the claimant pursue this property through the Texas Comptroller's free claim process.
+
+Fee: ${SETTINGS.feePct}% of the value recovered, computed as follows.
+  Estimated gross recovery: ${fmtMoney(fee.gross)}
+  Estimated fee: ${fmtMoney(fee.fee)}
+  Estimated net to claimant: ${fmtMoney(fee.net)}
+
+Payment terms: The Texas Comptroller pays the claimant directly. Pronto Recovery does not receive, hold, or have any right to intercept that payment, and does not file the claim form on the claimant's behalf. The claimant agrees to pay the contracted fee to Pronto Recovery directly and separately, within a reasonable time after confirming receipt of the recovered property.
+
+Disclosure: The claimant may pursue this claim at no cost directly through the Texas Comptroller at ClaimItTexas.gov without using Pronto Recovery's services.
+
+This agreement is governed by Texas Property Code Section 74.507.
+
+Claimant signature: _____________________  Date: __________`;
+  const es = `PRONTO RECOVERY - ACUERDO DE ASISTENCIA EN LA RECUPERACIÓN DE BIENES NO RECLAMADOS
+
+Fecha: ${dateStr}
+Reclamante: ${c.ownerName||'[nombre legal del reclamante]'}
+
+Bien identificado: ${c.propertyType||'bien no reclamado'} registrado en el Contralor de Texas, valor estimado ${fmtMoney(fee.gross)}.
+
+Servicios prestados: investigación, apoyo en la verificación de identidad, asistencia en la preparación del reclamo y organización de documentos para ayudar al reclamante a través del proceso gratuito de reclamo del Contralor de Texas.
+
+Comisión: ${SETTINGS.feePct}% del valor recuperado, calculado así.
+  Recuperación bruta estimada: ${fmtMoney(fee.gross)}
+  Comisión estimada: ${fmtMoney(fee.fee)}
+  Neto estimado para el reclamante: ${fmtMoney(fee.net)}
+
+Condiciones de pago: El Contralor de Texas paga directamente al reclamante. Pronto Recovery no recibe, retiene ni tiene derecho a interceptar ese pago, y no presenta el formulario de reclamo en nombre del reclamante. El reclamante se compromete a pagar la comisión contratada a Pronto Recovery directamente y por separado, dentro de un plazo razonable después de confirmar que recibió el bien recuperado.
+
+Aviso: el reclamante puede realizar este reclamo sin costo directamente a través del Contralor de Texas en ClaimItTexas.gov sin usar los servicios de Pronto Recovery.
+
+Este acuerdo se rige por la Sección 74.507 del Código de Propiedad de Texas.
+
+Firma del reclamante: _____________________  Fecha: __________`;
+  document.getElementById('agreementText').textContent = LANG==='es' ? es : en;
+}
+
+/* ---------- Collection tracking / invoice ---------- */
+function renderCollection(c){
+  const fee = computeFee(c);
+  const col = c.collection || {};
+  const stages = [
+    {key:'invoiceDate', label:t('invSent')},
+    {key:'reminder1Date', label:t('rem1')},
+    {key:'reminder2Date', label:t('rem2')},
+    {key:'finalNoticeDate', label:t('finalNotice')},
+    {key:'paidDate', label:t('paidDate')},
+  ];
+  let html = stages.map(s=>`
+    <div class="checklist-item">
+      <span style="flex:1;">${s.label}</span>
+      <span style="font-size:12px;color:var(--text-soft);margin-right:8px;">${col[s.key] ? new Date(col[s.key]).toLocaleDateString() : '—'}</span>
+      <button class="btn ghost sm" onclick="setCollectionDate('${c.id}','${s.key}')">${t('markSent')}</button>
+    </div>`).join('');
+  html += `<div style="margin-top:12px;">
+      <div class="agreement-box" id="invoiceTextBox">${buildInvoiceText(c, fee)}</div>
+      <div class="toolbar" style="margin-top:10px;margin-bottom:0;">
+        <button class="btn ghost sm" onclick="copyText('invoiceTextBox')">${t('copyBtn')}</button>
+        <button class="btn ghost sm" onclick="printText('invoiceTextBox')">${t('printBtn')}</button>
+      </div>
+    </div>`;
+  document.getElementById('collectionCard').innerHTML = html;
+}
+function buildInvoiceText(c, fee){
+  const dateStr = new Date().toLocaleDateString(LANG==='es'?'es-MX':'en-US');
+  if(LANG==='es'){
+    return `FACTURA - PRONTO RECOVERY
+
+Fecha: ${dateStr}
+Cliente: ${escapeHtml(c.ownerName||'')}
+
+Recuperación confirmada: ${fmtMoney(fee.gross)}
+Comisión contratada (${SETTINGS.feePct}%): ${fmtMoney(fee.fee)}
+
+Este monto se debe directamente a Pronto Recovery según el acuerdo firmado, después de su recuperación confirmada. Este pago es independiente del pago que usted ya recibió del Contralor de Texas.
+
+Gracias por su confianza.`;
+  }
+  return `INVOICE - PRONTO RECOVERY
+
+Date: ${dateStr}
+Client: ${escapeHtml(c.ownerName||'')}
+
+Confirmed recovery: ${fmtMoney(fee.gross)}
+Contracted fee (${SETTINGS.feePct}%): ${fmtMoney(fee.fee)}
+
+This amount is owed directly to Pronto Recovery under your signed agreement, following your confirmed recovery. This payment is separate from the payment you already received from the Texas Comptroller.
+
+Thank you for your business.`;
+}
+function setCollectionDate(id, key){
+  const c = CASES.find(x=>x.id===id); if(!c) return;
+  if(!c.collection) c.collection = {};
+  c.collection[key] = new Date().toISOString().slice(0,10);
+  if(key==='paidDate') c.status='paid';
+  db_setCase(c);
+  renderCollection(c);
+  renderDashboard(); renderBilling();
+}
+
+/* ---------- Activity log ---------- */
+function renderLog(c){
+  const list = document.getElementById('logList');
+  const entries = (c.activityLog||[]).slice().reverse();
+  list.innerHTML = entries.map(e=>{
+    const d = new Date(e.date);
+    return `<div class="log-item"><b>${d.toLocaleDateString()}</b> ${escapeHtml(e.note)}</div>`;
+  }).join('');
+}
+function addLog(){
+  const id = document.getElementById('caseId').value;
+  const note = document.getElementById('logNote').value.trim();
+  if(!id || !note) return;
+  const c = CASES.find(x=>x.id===id);
+  if(!c.activityLog) c.activityLog = [];
+  c.activityLog.push({date:new Date().toISOString(), note});
+  db_setCase(c);
+  document.getElementById('logNote').value='';
+  renderLog(c);
+}
+
+/* ---------- CSV import ---------- */
+function parseCsvLine(line){
+  const out = []; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch==='"'){ inQ = !inQ; }
+    else if(ch===',' && !inQ){ out.push(cur); cur=''; }
+    else { cur+=ch; }
+  }
+  out.push(cur);
+  return out.map(s=>s.trim());
+}
+function handleCsv(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const lines = e.target.result.split(/\r?\n/).filter(l=>l.trim().length>0);
+      const header = parseCsvLine(lines[0]).map(h=>h.toLowerCase());
+      const iName = header.findIndex(h=>h.includes('name'));
+      const iValue = header.findIndex(h=>h.includes('value')||h.includes('amount'));
+      const iCity = header.findIndex(h=>h.includes('city'));
+      const iType = header.findIndex(h=>h.includes('type'));
+      if(iName<0 || iValue<0) throw new Error('missing columns');
+      let count=0, dupCount=0;
+      for(let i=1;i<lines.length;i++){
+        const row = parseCsvLine(lines[i]);
+        if(!row[iName]) continue;
+        const nm = row[iName].trim();
+        const cty = iCity>=0 ? (row[iCity]||'').trim() : '';
+        const isDup = CASES.some(c=> (c.ownerName||'').trim().toLowerCase()===nm.toLowerCase() && (c.city||'').trim().toLowerCase()===cty.toLowerCase());
+        if(isDup){ dupCount++; continue; }
+        const val = Number((row[iValue]||'0').replace(/[^0-9.]/g,''))||0;
+        const c = {
+          id:'c_'+Date.now()+'_'+i, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(),
+          ownerName:nm, estimatedValue:val, city: cty, propertyType: iType>=0 ? (row[iType]||'other').toLowerCase() : 'other',
+          matchScore: val>=SETTINGS.threshold ? 60 : 45, status:'new', contactInfo:'', notes:'',
+          documents:{govId:false,proofAddr:false,ownership:false,estateFlag:false}, activityLog:[], collection:{}, recoveryConfirmed:false, scoringFactors:{}
+        };
+        CASES.push(c); count++;
+      }
+      if(FIREBASE_ENABLED && currentUser){
+        const batch = fbDb.batch();
+        CASES.slice(-count).forEach(c=> batch.set(fbDb.collection('users').doc(currentUser.uid).collection('cases').doc(c.id), c));
+        batch.commit();
+      } else {
+        saveCases(CASES);
+      }
+      renderDashboard(); renderCases(); renderBilling();
+      alert(count + ' ' + t('csvOk') + (dupCount>0 ? ' ('+dupCount+' '+t('csvDup')+')' : ''));
+    }catch(err){
+      alert(t('csvBad'));
+    }
+    evt.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Settings ---------- */
+function saveSettings(){
+  SETTINGS.feePct = Math.min(10, Math.max(0, Number(document.getElementById('settingFee').value)||10));
+  SETTINGS.threshold = Number(document.getElementById('settingThreshold').value)||0;
+  db_saveSettings();
+}
+function saveWorkspace(){
+  const v = document.getElementById('settingWorkspace').value.trim();
+  if(v) localStorage.setItem('pr_workspace', v);
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify({cases:CASES, settings:SETTINGS}, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='pronto-recovery-export.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+function clearData(){
+  if(!confirm(LANG==='es'?'Esto eliminará todos los casos de forma permanente. ¿Continuar?':'This will permanently delete all cases. Continue?')) return;
+  db_clearAll();
+  CASES = [];
+  renderDashboard(); renderCases(); renderBilling();
+}
+function handleRestore(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!Array.isArray(data.cases)) throw new Error('bad format');
+      if(!confirm(LANG==='es'
+        ? 'Esto agregará '+data.cases.length+' casos desde el archivo. Los casos existentes con el mismo ID se sobrescribirán. ¿Continuar?'
+        : 'This will add '+data.cases.length+' cases from the file. Existing cases with the same ID will be overwritten. Continue?')) return;
+      data.cases.forEach(c=>{
+        const idx = CASES.findIndex(x=>x.id===c.id);
+        if(idx>=0) CASES[idx] = c; else CASES.push(c);
+        db_setCase(c);
+      });
+      if(data.settings){
+        SETTINGS = data.settings;
+        document.getElementById('settingFee').value = SETTINGS.feePct;
+        document.getElementById('settingThreshold').value = SETTINGS.threshold;
+        db_saveSettings();
+      }
+      if(!FIREBASE_ENABLED) saveCases(CASES);
+      renderDashboard(); renderCases(); renderBilling();
+      alert(LANG==='es' ? 'Restauración completa.' : 'Restore complete.');
+    }catch(err){
+      alert(LANG==='es' ? 'No se pudo leer ese archivo de respaldo.' : 'Could not read that backup file.');
+    }
+    evt.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Utils ---------- */
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function copyText(elId){
+  const text = document.getElementById(elId).textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = event.target; const orig = btn.textContent;
+    btn.textContent = LANG==='es' ? 'Copiado' : 'Copied';
+    setTimeout(()=>btn.textContent=orig, 1400);
+  });
+}
+function printText(elId){
+  const text = document.getElementById(elId).textContent;
+  document.getElementById('printArea').textContent = text;
+  window.print();
+}
+
+/* ---------- Init ---------- */
+initPinGate();
+document.getElementById('settingFee').value = SETTINGS.feePct;
+document.getElementById('settingThreshold').value = SETTINGS.threshold;
+document.getElementById('settingWorkspace').value = localStorage.getItem('pr_workspace') || '';
+applyI18n();
+</script>
+</body>
+</html>
