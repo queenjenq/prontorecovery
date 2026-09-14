@@ -525,6 +525,7 @@ en:{
   invoiceText:"Generated invoice", markSent:"Mark sent today", markPaid:"Mark paid today", clear:"Clear",
   csvOk:"rows imported", csvBad:"Could not read that file. Expected columns: Name, Value, City, PropertyType", csvDup:"duplicates skipped",
   pinSetTitle:"Set a screen lock PIN", pinSetSub:"This is a local screen lock only, not encryption. Anyone with browser developer tools could still see the data. Use it as light protection on a shared device.",
+  pinSetSubCloud:"Create your workspace. This is a real account, your cases sync from any device using this same workspace name and PIN (6+ characters).",
   pinEnterTitle:"Enter your PIN", pinEnterSub:"Local screen lock for this device.",
   pinConfirmPlaceholder:"confirm", pinContinue:"Continue", pinWrong:"Incorrect PIN.", pinMismatch:"PINs did not match, try again.",
   overdue:"overdue",
@@ -575,6 +576,7 @@ es:{
   invoiceText:"Factura generada", markSent:"Marcar enviado hoy", markPaid:"Marcar pagado hoy", clear:"Borrar",
   csvOk:"filas importadas", csvBad:"No se pudo leer el archivo. Columnas esperadas: Name, Value, City, PropertyType", csvDup:"duplicados omitidos",
   pinSetTitle:"Configure un PIN de bloqueo", pinSetSub:"Este es solo un bloqueo local de pantalla, no encriptación. Cualquiera con herramientas de desarrollador del navegador aún podría ver los datos. Úselo como protección ligera en un dispositivo compartido.",
+  pinSetSubCloud:"Cree su espacio de trabajo. Esta es una cuenta real, sus casos se sincronizan desde cualquier dispositivo usando el mismo nombre de espacio de trabajo y PIN (6 o más caracteres).",
   pinEnterTitle:"Ingrese su PIN", pinEnterSub:"Bloqueo de pantalla local para este dispositivo.",
   pinConfirmPlaceholder:"confirmar", pinContinue:"Continuar", pinWrong:"PIN incorrecto.", pinMismatch:"Los PIN no coinciden, intente de nuevo.",
   overdue:"vencido",
@@ -618,7 +620,7 @@ function setPinModeUI(){
   document.getElementById('pinErr').textContent = '';
   if(PIN_MODE === 'signup'){
     document.getElementById('pinTitle').textContent = t('pinSetTitle');
-    document.getElementById('pinSub').textContent = t('pinSetSub');
+    document.getElementById('pinSub').textContent = t('pinSetSubCloud');
     confirmInput.style.display = 'block';
     confirmInput.placeholder = t('pinConfirmPlaceholder');
     document.getElementById('pinBtn').textContent = LANG==='es' ? 'Crear espacio de trabajo' : 'Create workspace';
