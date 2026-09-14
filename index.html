@@ -465,6 +465,11 @@ const firebaseConfig = {
   appId: "1:713608425283:web:04512000168a57f677c9f6"
 };
 const FIREBASE_ENABLED = !!(firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY");
+/* Cloud Storage now requires the Blaze (pay-as-you-go) plan on Firebase,
+   even for near-zero usage, a change Google made in early 2026. Auth and
+   Firestore stay free on Spark. Flip this to true once/if the project is
+   upgraded to Blaze, and document uploads will turn back on automatically. */
+const DOCS_STORAGE_ENABLED = false;
 let fbAuth = null, fbDb = null, fbStorage = null, currentUser = null, unsubCases = null;
 if(FIREBASE_ENABLED){
   firebase.initializeApp(firebaseConfig);
@@ -501,7 +506,7 @@ en:{
   cvPropertyIdentified:"Property identified", cvIdentityVerified:"Identity verified", cvAgreementSigned:"Agreement signed", cvDocsReceived:"Documents received",
   cvClaimPending:"Claim submitted, pending", cvStateReview:"State review", cvRecoveryCompleted:"Recovery completed", cvFeePaid:"Fee paid",
   noRevenue:"No fees earned yet.",
-  uploadBtn:"Upload", noFiles:"No files uploaded yet.", deleteFileBtn:"Remove", needsCloudNote:"Enable cloud sync (Settings, or the config note in the file) to store and share documents.",
+  uploadBtn:"Upload", noFiles:"No files uploaded yet.", deleteFileBtn:"Remove", needsCloudNote:"File storage needs the Firebase Blaze plan (Google requires it for Cloud Storage now, though real usage stays free under 5GB). Not turned on yet, keep using the checklist above to track documents.",
   footerLegal:"This tool does not file claims, hold funds, or act under a power of attorney to receive payment. Fees are contracted with, and collected from, the claimant only after the claimant confirms recovery.",
   fOwner:"Owner / claimant name", fValue:"Estimated recovery ($)", fCity:"City", fType:"Property type",
   tCash:"Cash / bank account", tMineral:"Mineral proceeds", tSecurities:"Securities", tInsurance:"Insurance proceeds", tDeceased:"Deceased owner / heir", tOther:"Other",
@@ -552,7 +557,7 @@ es:{
   cvPropertyIdentified:"Propiedad identificada", cvIdentityVerified:"Identidad verificada", cvAgreementSigned:"Acuerdo firmado", cvDocsReceived:"Documentos recibidos",
   cvClaimPending:"Reclamo presentado, pendiente", cvStateReview:"Revisión estatal", cvRecoveryCompleted:"Recuperación completada", cvFeePaid:"Comisión pagada",
   noRevenue:"Aún no se han generado comisiones.",
-  uploadBtn:"Subir", noFiles:"Aún no hay archivos subidos.", deleteFileBtn:"Quitar", needsCloudNote:"Active la sincronización en la nube (Ajustes, o la nota de configuración en el archivo) para guardar y compartir documentos.",
+  uploadBtn:"Subir", noFiles:"Aún no hay archivos subidos.", deleteFileBtn:"Quitar", needsCloudNote:"El almacenamiento de archivos requiere el plan Blaze de Firebase (Google ahora lo exige para Cloud Storage, aunque el uso real se mantiene gratis bajo 5GB). Aún no está activado, siga usando la lista de arriba para dar seguimiento a los documentos.",
   footerLegal:"Esta herramienta no presenta reclamos, no retiene fondos ni actúa bajo un poder notarial para recibir pagos. Las comisiones se contratan y se cobran del reclamante solo después de que confirme su recuperación.",
   fOwner:"Nombre del propietario / reclamante", fValue:"Recuperación estimada ($)", fCity:"Ciudad", fType:"Tipo de bien",
   tCash:"Efectivo / cuenta bancaria", tMineral:"Regalías minerales", tSecurities:"Valores bursátiles", tInsurance:"Seguro", tDeceased:"Propietario fallecido / heredero", tOther:"Otro",
@@ -1203,7 +1208,7 @@ function renderDocChecklist(c){
   if(docs.estateFlag){ html += `<div class="checklist-item neg"><span>&#9888; ${t('docEstateFlag')}</span></div>`; }
 
   html += `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">`;
-  if(FIREBASE_ENABLED){
+  if(DOCS_STORAGE_ENABLED){
     const files = c.uploadedFiles || [];
     html += files.length===0 ? `<div class="hint" style="margin-bottom:8px;">${t('noFiles')}</div>` :
       files.map(f=>`<div class="checklist-item">
