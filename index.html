@@ -347,11 +347,24 @@
 
     <!-- OUTREACH -->
     <div class="view" id="view-outreach">
+      <div class="section-title" data-i18n="referralTitle">Referral script, for clients you already know</div>
+      <div class="card">
+        <p style="font-size:12.5px;color:var(--text-soft);margin-top:0;" data-i18n="referralNote">Use this in conversation when a Pronto Forms or Credit Edit client mentions someone who passed away, moved, or closed a business. Casual, not a pitch.</p>
+        <div class="agreement-box" id="referralText"></div>
+        <button class="btn ghost sm" style="margin-top:10px;" onclick="copyText('referralText')" data-i18n="copyBtn">Copy text</button>
+      </div>
+
       <div class="section-title" data-i18n="outreachTitle">Outreach template</div>
       <div class="card">
         <p style="font-size:12.5px;color:var(--text-soft);margin-top:0;" data-i18n="outreachNote">Copy and personalize. Never state a dollar amount unless the record has been verified against the claimant's identity.</p>
         <div class="agreement-box" id="outreachText"></div>
         <button class="btn ghost sm" style="margin-top:10px;" onclick="copyText('outreachText')" data-i18n="copyBtn">Copy text</button>
+      </div>
+
+      <div class="section-title" data-i18n="smsTitle">Short version, for text message</div>
+      <div class="card">
+        <div class="agreement-box" id="smsText"></div>
+        <button class="btn ghost sm" style="margin-top:10px;" onclick="copyText('smsText')" data-i18n="copyBtn">Copy text</button>
       </div>
     </div>
 
@@ -603,6 +616,8 @@ en:{
   importBtn:"Import CSV", printReportBtn:"Print report", fAll:"All statuses", clearSelectionBtn:"Clear", applyBtn:"Apply", applyDateBtn:"Set follow-up date",
   billingTitle:"Fees owed and collected",
   outreachTitle:"Outreach template", outreachNote:"Copy and personalize. Never state a dollar amount unless the record has been verified against the claimant's identity.", copyBtn:"Copy text", printBtn:"Print",
+  referralTitle:"Referral script, for clients you already know", referralNote:"Use this in conversation when a Pronto Forms or Credit Edit client mentions someone who passed away, moved, or closed a business. Casual, not a pitch.",
+  smsTitle:"Short version, for text message",
   settingsTitle:"Settings", feeCapLabel:"Standard fee percentage (max 10%, Property Code 74.507)", thresholdLabel:"Minimum recovery value to qualify a lead",
   motivationTitle:"Motivation", yourNameLabel:"Your name (for the dashboard greeting)", goalLabel:"Monthly fee goal ($)",
   goalTitle:"This month's goal",
@@ -667,6 +682,8 @@ es:{
   importBtn:"Importar CSV", printReportBtn:"Imprimir reporte", fAll:"Todos los estados", clearSelectionBtn:"Borrar", applyBtn:"Aplicar", applyDateBtn:"Poner fecha de seguimiento",
   billingTitle:"Comisiones pendientes y cobradas",
   outreachTitle:"Plantilla de contacto", outreachNote:"Copie y personalice. Nunca indique una cantidad exacta a menos que el registro esté verificado con la identidad del reclamante.", copyBtn:"Copiar texto", printBtn:"Imprimir",
+  referralTitle:"Guion de referencia, para clientes que ya conoce", referralNote:"Úselo en conversación cuando un cliente de Pronto Forms o Credit Edit mencione a alguien que falleció, se mudó o cerró un negocio. Casual, no es una venta.",
+  smsTitle:"Versión corta, para mensaje de texto",
   settingsTitle:"Ajustes", feeCapLabel:"Porcentaje de comisión estándar (máximo 10%, Sección 74.507)", thresholdLabel:"Valor mínimo de recuperación para calificar un caso potencial",
   motivationTitle:"Motivación", yourNameLabel:"Su nombre (para el saludo del panel)", goalLabel:"Meta mensual de comisiones ($)",
   goalTitle:"Meta de este mes",
@@ -1393,6 +1410,14 @@ function openClientView(id){
 
 /* ---------- Outreach ---------- */
 function renderOutreach(){
+  const referralEn = `Quick thing before you go. Texas holds onto money that people forget about all the time. Old paychecks, utility deposits, insurance payouts, accounts from a bank that closed, that kind of thing. It happens more than people realize, especially after someone passes away or moves out of state.
+
+If [Name] ever lived or worked in Texas, it might be worth a free two minute check. I can look it up for you right now if you want, no cost unless we actually find something and you decide to move forward.`;
+  const referralEs = `Una cosa rápida antes de que se vaya. Texas guarda dinero que la gente olvida todo el tiempo. Cheques viejos, depósitos de servicios, pagos de seguro, cuentas de un banco que cerró, ese tipo de cosas. Pasa más de lo que la gente cree, sobre todo cuando alguien fallece o se muda de estado.
+
+Si [Nombre] alguna vez vivió o trabajó en Texas, vale la pena revisar, toma dos minutos y es gratis. Se lo puedo buscar ahora mismo si quiere, sin costo a menos que realmente encontremos algo y usted decida seguir adelante.`;
+  document.getElementById('referralText').textContent = LANG==='es' ? referralEs : referralEn;
+
   const en = `Hello [Name],
 
 We are contacting you regarding a Texas unclaimed property record that appears to potentially match your name and identifying information.
@@ -1412,6 +1437,10 @@ Con gusto le explicamos el registro que encontramos y le acompañamos durante el
 
 Responda a este mensaje o llámenos si desea más información.`;
   document.getElementById('outreachText').textContent = LANG==='es' ? es : en;
+
+  const smsEn = `Hi [Name], this is [Your Name] with Pronto Recovery. I found what looks like unclaimed property in your name with the state of Texas. No cost to check it out. Want me to send details?`;
+  const smsEs = `Hola [Nombre], le habla [Su Nombre] de Pronto Recovery. Encontré lo que parece ser una propiedad no reclamada a su nombre con el estado de Texas. No cuesta nada revisarlo. Le mando los detalles?`;
+  document.getElementById('smsText').textContent = LANG==='es' ? smsEs : smsEn;
 }
 
 /* ---------- Scoring factors ---------- */
