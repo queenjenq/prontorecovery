@@ -343,6 +343,9 @@
       </div>
       <div class="section-title" data-i18n="mRevenueByMonth">Fees earned by month</div>
       <div class="card" id="revenueByMonthCard"></div>
+
+      <div class="section-title" data-i18n="mBySource">Which sources actually convert</div>
+      <div class="card" id="sourceBreakdownCard"></div>
     </div>
 
     <!-- OUTREACH -->
@@ -358,13 +361,19 @@
       <div class="card">
         <p style="font-size:12.5px;color:var(--text-soft);margin-top:0;" data-i18n="outreachNote">Copy and personalize. Never state a dollar amount unless the record has been verified against the claimant's identity.</p>
         <div class="agreement-box" id="outreachText"></div>
-        <button class="btn ghost sm" style="margin-top:10px;" onclick="copyText('outreachText')" data-i18n="copyBtn">Copy text</button>
+        <div class="toolbar" style="margin-top:10px;margin-bottom:0;">
+          <button class="btn ghost sm" onclick="copyText('outreachText')" data-i18n="copyBtn">Copy text</button>
+          <button class="btn ghost sm" onclick="emailThis('outreachText')" data-i18n="emailBtn">Email this</button>
+        </div>
       </div>
 
       <div class="section-title" data-i18n="smsTitle">Short version, for text message</div>
       <div class="card">
         <div class="agreement-box" id="smsText"></div>
-        <button class="btn ghost sm" style="margin-top:10px;" onclick="copyText('smsText')" data-i18n="copyBtn">Copy text</button>
+        <div class="toolbar" style="margin-top:10px;margin-bottom:0;">
+          <button class="btn ghost sm" onclick="copyText('smsText')" data-i18n="copyBtn">Copy text</button>
+          <button class="btn ghost sm" onclick="textThis('smsText')" data-i18n="textBtn">Text this</button>
+        </div>
       </div>
     </div>
 
@@ -471,6 +480,15 @@
 
     <label data-i18n="fContact">Contact info</label>
     <input id="fContact" placeholder="phone / email">
+
+    <label data-i18n="fSource">Lead source</label>
+    <select id="fSource">
+      <option value="referral" data-i18n="srcReferral">Client referral</option>
+      <option value="social" data-i18n="srcSocial">Social media (TikTok/Facebook)</option>
+      <option value="direct" data-i18n="srcDirect">Direct outreach</option>
+      <option value="community" data-i18n="srcCommunity">Community group</option>
+      <option value="other" data-i18n="srcOther">Other</option>
+    </select>
 
     <label data-i18n="fNotes">Research notes</label>
     <textarea id="fNotes"></textarea>
@@ -633,6 +651,9 @@ en:{
   tabReports:"Reports", reportsTitle:"Business validation metrics",
   mContactSuccess:"Contact success", mAgreementConv:"Agreement conversion", mRecoveryRate:"Recovery rate", mConversionLead:"Lead to signed",
   mAverages:"Averages", mAvgRecovery:"Average recovery", mAvgFee:"Average fee", mCases:"Total cases tracked", mRevenueByMonth:"Fees earned by month",
+  mBySource:"Which sources actually convert",
+  fSource:"Lead source", srcReferral:"Client referral", srcSocial:"Social media (TikTok/Facebook)", srcDirect:"Direct outreach", srcCommunity:"Community group", srcOther:"Other",
+  emailBtn:"Email this", textBtn:"Text this",
   clientViewBtn:"Open client view", cvYourCase:"Your recovery case", cvPotential:"Potential recovery", cvFee:"Pronto Recovery fee", cvNet:"Estimated client net",
   cvPropertyIdentified:"Property identified", cvIdentityVerified:"Identity verified", cvAgreementSigned:"Agreement signed", cvDocsReceived:"Documents received",
   cvClaimPending:"Claim submitted, pending", cvStateReview:"State review", cvRecoveryCompleted:"Recovery completed", cvFeePaid:"Fee paid",
@@ -699,6 +720,9 @@ es:{
   tabReports:"Reportes", reportsTitle:"Métricas de validación del negocio",
   mContactSuccess:"Éxito de contacto", mAgreementConv:"Conversión de acuerdos", mRecoveryRate:"Tasa de recuperación", mConversionLead:"De caso potencial a firmado",
   mAverages:"Promedios", mAvgRecovery:"Recuperación promedio", mAvgFee:"Comisión promedio", mCases:"Total de casos registrados", mRevenueByMonth:"Comisiones ganadas por mes",
+  mBySource:"Qué fuentes realmente convierten",
+  fSource:"Fuente del caso", srcReferral:"Referencia de cliente", srcSocial:"Redes sociales (TikTok/Facebook)", srcDirect:"Contacto directo", srcCommunity:"Grupo comunitario", srcOther:"Otro",
+  emailBtn:"Enviar por correo", textBtn:"Enviar por mensaje",
   clientViewBtn:"Abrir vista del cliente", cvYourCase:"Su caso de recuperación", cvPotential:"Recuperación potencial", cvFee:"Comisión de Pronto Recovery", cvNet:"Neto estimado del cliente",
   cvPropertyIdentified:"Propiedad identificada", cvIdentityVerified:"Identidad verificada", cvAgreementSigned:"Acuerdo firmado", cvDocsReceived:"Documentos recibidos",
   cvClaimPending:"Reclamo presentado, pendiente", cvStateReview:"Revisión estatal", cvRecoveryCompleted:"Recuperación completada", cvFeePaid:"Comisión pagada",
@@ -1359,6 +1383,23 @@ function renderReports(){
         <div class="bar-label">${label}</div>
       </div>`;
   }).join('') + `</div>`;
+
+  const SOURCE_LABEL = {referral:'srcReferral', social:'srcSocial', direct:'srcDirect', community:'srcCommunity', other:'srcOther'};
+  const bySource = {};
+  Object.keys(SOURCE_LABEL).forEach(k=> bySource[k] = {leads:0, won:0, fees:0});
+  CASES.forEach(c=>{
+    const src = c.leadSource || 'referral';
+    if(!bySource[src]) bySource[src] = {leads:0, won:0, fees:0};
+    bySource[src].leads++;
+    if(c.collection && c.collection.paidDate){ bySource[src].won++; bySource[src].fees += computeFee(c).fee; }
+  });
+  const srcCard = document.getElementById('sourceBreakdownCard');
+  const srcKeys = Object.keys(bySource).filter(k=>bySource[k].leads>0);
+  srcCard.innerHTML = srcKeys.length===0 ? `<div class="empty"><div>${t('emptyCases')}</div></div>` : srcKeys.map(k=>`
+    <div class="row-between" style="padding:9px 0;border-bottom:1px solid var(--line);">
+      <span>${t(SOURCE_LABEL[k]||'srcOther')} <span style="color:var(--text-soft);font-size:11.5px;">(${bySource[k].leads} ${LANG==='es'?'casos':'leads'}, ${bySource[k].won} ${LANG==='es'?'pagados':'paid'})</span></span>
+      <b>${fmtMoney(bySource[k].fees)}</b>
+    </div>`).join('');
 }
 
 /* ---------- Client view ---------- */
@@ -1488,6 +1529,7 @@ function openCaseModal(id){
     document.getElementById('fNextAction').value = c.nextActionDate||'';
     document.getElementById('fStatus').value = c.status||'new';
     document.getElementById('fContact').value = c.contactInfo||'';
+    document.getElementById('fSource').value = c.leadSource||'referral';
     document.getElementById('fNotes').value = c.notes||'';
     document.getElementById('fScore').value = c.matchScore!=null ? c.matchScore : 50;
     document.getElementById('scoreBig').textContent = document.getElementById('fScore').value;
@@ -1500,6 +1542,7 @@ function openCaseModal(id){
     document.getElementById('caseId').value = '';
     ['fOwner','fValue','fCity','fNextAction','fContact','fNotes'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('fType').value = 'cash';
+    document.getElementById('fSource').value = 'referral';
     document.getElementById('fStatus').value = 'new';
     document.getElementById('fScore').value = 50;
     document.getElementById('scoreBig').textContent = '50';
@@ -1553,6 +1596,7 @@ function doSaveCase(id){
   const prevStatus = existing.status;
   existing.status = document.getElementById('fStatus').value;
   existing.contactInfo = document.getElementById('fContact').value.trim();
+  existing.leadSource = document.getElementById('fSource').value;
   existing.notes = document.getElementById('fNotes').value.trim();
   existing.matchScore = Number(document.getElementById('fScore').value)||0;
   existing.scoringFactors = {};
@@ -1927,6 +1971,15 @@ function copyText(elId){
     btn.textContent = LANG==='es' ? 'Copiado' : 'Copied';
     setTimeout(()=>btn.textContent=orig, 1400);
   });
+}
+function emailThis(elId){
+  const text = document.getElementById(elId).textContent;
+  const subject = LANG==='es' ? 'Bienes no reclamados en Texas' : 'Texas unclaimed property';
+  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+}
+function textThis(elId){
+  const text = document.getElementById(elId).textContent;
+  window.location.href = 'sms:?body=' + encodeURIComponent(text);
 }
 function printText(elId){
   const text = document.getElementById(elId).textContent;
