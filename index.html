@@ -234,6 +234,20 @@
           <option value="" data-i18n="fAll">All statuses</option>
         </select>
       </div>
+      <div class="card" id="bulkBar" style="display:none;margin-bottom:12px;">
+        <div class="row-between" style="margin-bottom:10px;">
+          <b id="bulkCount">0 selected</b>
+          <button class="btn ghost sm" onclick="clearSelection()" data-i18n="clearSelectionBtn">Clear</button>
+        </div>
+        <div class="grid2">
+          <select id="bulkStatus"></select>
+          <button class="btn ghost" onclick="bulkSetStatus()" data-i18n="applyBtn">Apply</button>
+        </div>
+        <div class="grid2" style="margin-top:8px;">
+          <input type="date" id="bulkDate">
+          <button class="btn ghost" onclick="bulkSetNextAction()" data-i18n="applyDateBtn">Set follow-up date</button>
+        </div>
+      </div>
       <div class="section-title" data-i18n="pipelineTitle">Pipeline</div>
       <div class="card" id="casesCard"></div>
     </div>
@@ -492,7 +506,7 @@ en:{
   kpiPotential:"Potential recovery", kpiActive:"Active cases", kpiRecovered:"Recovered to clients", kpiCollected:"Fees collected",
   collRateTitle:"Collection rate", collRateNote:"This is the number to watch during validation. If clients recover money and don't pay, the model needs adjusting before more is invested in software.",
   followupTitle:"Needs follow up", topLeadsTitle:"Top leads", newLead:"New lead", pipelineTitle:"Pipeline",
-  importBtn:"Import CSV", printReportBtn:"Print report", fAll:"All statuses",
+  importBtn:"Import CSV", printReportBtn:"Print report", fAll:"All statuses", clearSelectionBtn:"Clear", applyBtn:"Apply", applyDateBtn:"Set follow-up date",
   billingTitle:"Fees owed and collected",
   outreachTitle:"Outreach template", outreachNote:"Copy and personalize. Never state a dollar amount unless the record has been verified against the claimant's identity.", copyBtn:"Copy text", printBtn:"Print",
   settingsTitle:"Settings", feeCapLabel:"Standard fee percentage (max 10%, Property Code 74.507)", thresholdLabel:"Minimum recovery value to qualify a lead",
@@ -543,7 +557,7 @@ es:{
   kpiPotential:"Recuperación potencial", kpiActive:"Casos activos", kpiRecovered:"Recuperado para clientes", kpiCollected:"Comisiones cobradas",
   collRateTitle:"Tasa de cobro", collRateNote:"Este es el número a vigilar durante la validación. Si los clientes recuperan dinero y no pagan, el modelo necesita ajustarse antes de invertir más en el software.",
   followupTitle:"Requiere seguimiento", topLeadsTitle:"Casos principales", newLead:"Nuevo caso potencial", pipelineTitle:"Flujo de trabajo",
-  importBtn:"Importar CSV", printReportBtn:"Imprimir reporte", fAll:"Todos los estados",
+  importBtn:"Importar CSV", printReportBtn:"Imprimir reporte", fAll:"Todos los estados", clearSelectionBtn:"Borrar", applyBtn:"Aplicar", applyDateBtn:"Poner fecha de seguimiento",
   billingTitle:"Comisiones pendientes y cobradas",
   outreachTitle:"Plantilla de contacto", outreachNote:"Copie y personalice. Nunca indique una cantidad exacta a menos que el registro esté verificado con la identidad del reclamante.", copyBtn:"Copiar texto", printBtn:"Imprimir",
   settingsTitle:"Ajustes", feeCapLabel:"Porcentaje de comisión estándar (máximo 10%, Sección 74.507)", thresholdLabel:"Valor mínimo de recuperación para calificar un caso potencial",
@@ -857,6 +871,12 @@ function buildStatusFilter(){
   const cur = sel.value;
   sel.innerHTML = `<option value="">${t('fAll')}</option>` + Object.keys(STATUS_LABEL).map(k=>`<option value="${k}">${t(STATUS_LABEL[k])}</option>`).join('');
   sel.value = cur;
+  const bulkSel = document.getElementById('bulkStatus');
+  if(bulkSel){
+    const curB = bulkSel.value;
+    bulkSel.innerHTML = Object.keys(STATUS_LABEL).map(k=>`<option value="${k}">${t(STATUS_LABEL[k])}</option>`).join('');
+    if(curB) bulkSel.value = curB;
+  }
 }
 
 /* ---------- Dashboard ---------- */
@@ -892,7 +912,7 @@ function renderDashboard(){
 /* ---------- Cases list ---------- */
 function scoreColor(score){ score=Number(score)||0; if(score>=85) return '#4A6670'; if(score>=60) return '#B8863D'; return '#A84A32'; }
 
-function caseRowHTML(c){
+function caseRowHTML(c, selectable){
   const today = new Date(); today.setHours(0,0,0,0);
   let metaText = escapeHtml(c.city||'');
   let dueClass = '';
@@ -902,7 +922,9 @@ function caseRowHTML(c){
     metaText = (metaText?metaText+' &middot; ':'') + d.toLocaleDateString() + (overdue?' ('+t('overdue')+')':'');
     if(overdue) dueClass = 'due';
   }
+  const checkboxHtml = selectable ? `<input type="checkbox" class="case-select" ${SELECTED.has(c.id)?'checked':''} onclick="event.stopPropagation(); toggleSelect('${c.id}', this.checked)" style="width:18px;height:18px;flex:none;">` : '';
   return `<div class="case-row" onclick="openCaseModal('${c.id}')">
+    ${checkboxHtml}
     <div class="score" style="background:${scoreColor(c.matchScore)}">${c.matchScore||0}</div>
     <div class="case-main">
       <div class="nm">${escapeHtml(c.ownerName||'—')}</div>
@@ -915,6 +937,7 @@ function caseRowHTML(c){
   </div>`;
 }
 
+let SELECTED = new Set();
 function renderCases(){
   const card = document.getElementById('casesCard');
   const q = (document.getElementById('caseSearch').value||'').toLowerCase();
@@ -925,7 +948,46 @@ function renderCases(){
     return matchQ && matchF;
   });
   list = list.sort((a,b)=> new Date(b.updatedAt||0) - new Date(a.updatedAt||0));
-  card.innerHTML = list.length===0 ? `<div class="empty"><div class="num">0</div><div>${t('emptyCases')}</div></div>` : list.map(c=>caseRowHTML(c)).join('');
+  card.innerHTML = list.length===0 ? `<div class="empty"><div class="num">0</div><div>${t('emptyCases')}</div></div>` : list.map(c=>caseRowHTML(c, true)).join('');
+  updateBulkBar();
+}
+function toggleSelect(id, checked){
+  if(checked) SELECTED.add(id); else SELECTED.delete(id);
+  updateBulkBar();
+}
+function clearSelection(){ SELECTED.clear(); renderCases(); }
+function updateBulkBar(){
+  const bar = document.getElementById('bulkBar');
+  if(!bar) return;
+  if(SELECTED.size===0){ bar.style.display = 'none'; return; }
+  bar.style.display = 'block';
+  document.getElementById('bulkCount').textContent = SELECTED.size + ' ' + (LANG==='es'?'seleccionados':'selected');
+}
+function bulkSetStatus(){
+  const val = document.getElementById('bulkStatus').value;
+  if(!val) return;
+  SELECTED.forEach(id=>{
+    const c = CASES.find(x=>x.id===id);
+    if(!c) return;
+    c.status = val;
+    if(['recovery_confirmed','fee_due','paid'].includes(val)) c.recoveryConfirmed = true;
+    c.updatedAt = new Date().toISOString();
+    if(!c.activityLog) c.activityLog = [];
+    c.activityLog.push({date:new Date().toISOString(), note:(LANG==='es'?'Estado cambiado a ':'Status changed to ')+t(STATUS_LABEL[val])+' ('+(LANG==='es'?'en lote':'bulk')+')'});
+    db_setCase(c);
+  });
+  renderDashboard(); renderCases(); renderBilling();
+}
+function bulkSetNextAction(){
+  const val = document.getElementById('bulkDate').value;
+  if(!val) return;
+  SELECTED.forEach(id=>{
+    const c = CASES.find(x=>x.id===id);
+    if(!c) return;
+    c.nextActionDate = val;
+    db_setCase(c);
+  });
+  renderDashboard(); renderCases();
 }
 
 /* ---------- Billing ---------- */
