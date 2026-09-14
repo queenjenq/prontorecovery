@@ -198,7 +198,8 @@
       </div>
     </div>
     <nav class="tabs">
-      <button class="tab-btn active" data-view="dashboard" onclick="showView('dashboard')" data-i18n="tabDash">Dashboard</button>
+      <button class="tab-btn active" data-view="today" onclick="showView('today')" data-i18n="tabToday">Today</button>
+      <button class="tab-btn" data-view="dashboard" onclick="showView('dashboard')" data-i18n="tabDash">Dashboard</button>
       <button class="tab-btn" data-view="cases" onclick="showView('cases')" data-i18n="tabCases">Cases</button>
       <button class="tab-btn" data-view="billing" onclick="showView('billing')" data-i18n="tabBilling">Billing</button>
       <button class="tab-btn" data-view="reports" onclick="showView('reports')" data-i18n="tabReports">Reports</button>
@@ -209,8 +210,8 @@
 
   <main>
 
-    <!-- DASHBOARD -->
-    <div class="view active" id="view-dashboard">
+    <!-- TODAY -->
+    <div class="view active" id="view-today">
       <div class="card hero-card" id="heroCard">
         <div class="hero-greeting" id="heroGreeting">Good morning.</div>
         <div class="hero-sub" id="heroSub">Let's find some money today.</div>
@@ -229,6 +230,25 @@
 
       <div class="card momentum-card" id="momentumCard"></div>
 
+      <div class="toolbar">
+        <a href="https://www.claimittexas.gov/" target="_blank" class="btn gold" style="text-decoration:none;" data-i18n="quickLookupBtn">Look up a name on ClaimItTexas</a>
+      </div>
+
+      <div class="section-title" data-i18n="overdueTitle">🔴 Overdue follow-ups</div>
+      <div class="card" id="todayOverdueCard"></div>
+
+      <div class="section-title" data-i18n="dueTodayTitle">🟡 Due today</div>
+      <div class="card" id="todayDueCard"></div>
+
+      <div class="section-title" data-i18n="newLeadsTitle">🆕 New leads, not yet contacted</div>
+      <div class="card" id="todayNewCard"></div>
+
+      <div class="section-title" data-i18n="readyInvoiceTitle">💵 Recovered, ready to invoice</div>
+      <div class="card" id="todayInvoiceCard"></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="view" id="view-dashboard">
       <div class="disclosure">
         <strong data-i18n="discTitle">How Pronto Recovery gets paid:</strong>
         <span data-i18n="discBody">The Texas Comptroller pays the claimant directly. Pronto Recovery never receives, holds, or routes the state's payment. The claimant pays the contracted fee separately after they confirm they were paid, per the signed agreement, capped at 10% under Property Code Section 74.507.</span>
@@ -549,7 +569,11 @@ function workspaceToEmail(ws){
 const I18N = {
 en:{
   brandName:"Pronto Recovery", brandSub:"Texas unclaimed property research and recovery assistance",
-  tabDash:"Dashboard", tabCases:"Cases", tabBilling:"Billing", tabOutreach:"Outreach", tabSettings:"Settings",
+  tabToday:"Today", tabDash:"Dashboard", tabCases:"Cases", tabBilling:"Billing", tabOutreach:"Outreach", tabSettings:"Settings",
+  quickLookupBtn:"Look up a name on ClaimItTexas",
+  overdueTitle:"🔴 Overdue follow-ups", dueTodayTitle:"🟡 Due today", newLeadsTitle:"🆕 New leads, not yet contacted", readyInvoiceTitle:"💵 Recovered, ready to invoice",
+  todayAllClearOverdue:"Nothing overdue. You're on top of it.", todayAllClearDue:"Nothing due today.",
+  todayNoNewLeads:"No new leads waiting. Time to go find some.", todayNoInvoices:"Nothing waiting on an invoice right now.",
   discTitle:"How Pronto Recovery gets paid:",
   discBody:"The Texas Comptroller pays the claimant directly. Pronto Recovery never receives, holds, or routes the state's payment. The claimant pays the contracted fee separately after they confirm they were paid, per the signed agreement, capped at 10% under Property Code Section 74.507.",
   kpiPotential:"Potential recovery", kpiActive:"Active cases", kpiRecovered:"Recovered to clients", kpiCollected:"Fees collected",
@@ -608,7 +632,11 @@ en:{
 },
 es:{
   brandName:"Pronto Recovery", brandSub:"Investigación y asistencia en la recuperación de bienes no reclamados en Texas",
-  tabDash:"Panel", tabCases:"Casos", tabBilling:"Cobros", tabOutreach:"Contacto", tabSettings:"Ajustes",
+  tabToday:"Hoy", tabDash:"Panel", tabCases:"Casos", tabBilling:"Cobros", tabOutreach:"Contacto", tabSettings:"Ajustes",
+  quickLookupBtn:"Buscar un nombre en ClaimItTexas",
+  overdueTitle:"🔴 Seguimientos vencidos", dueTodayTitle:"🟡 Para hoy", newLeadsTitle:"🆕 Casos nuevos sin contactar", readyInvoiceTitle:"💵 Recuperados, listos para facturar",
+  todayAllClearOverdue:"No hay nada vencido. Va muy bien.", todayAllClearDue:"No hay nada pendiente para hoy.",
+  todayNoNewLeads:"No hay casos nuevos esperando. Hora de buscar más.", todayNoInvoices:"No hay nada esperando factura por ahora.",
   discTitle:"Cómo cobra Pronto Recovery:",
   discBody:"El Contralor de Texas paga directamente al reclamante. Pronto Recovery nunca recibe, retiene ni gestiona el pago del estado. El cliente paga la comisión contratada por separado, después de confirmar que recibió su pago, según el acuerdo firmado, con un tope del 10% bajo la Sección 74.507 del Código de Propiedad.",
   kpiPotential:"Recuperación potencial", kpiActive:"Casos activos", kpiRecovered:"Recuperado para clientes", kpiCollected:"Comisiones cobradas",
@@ -926,6 +954,7 @@ function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===name));
+  if(name==='today') renderToday();
   if(name==='dashboard') renderDashboard();
   if(name==='cases') renderCases();
   if(name==='billing') renderBilling();
@@ -951,6 +980,7 @@ function renderDashboard(){
   renderHero();
   renderGoal();
   renderMomentum();
+  renderToday();
 
   const active = CASES.filter(c=>!['closed','paid'].includes(c.status));
   const potential = active.reduce((s,c)=>s+(Number(c.estimatedValue)||0),0);
@@ -1026,6 +1056,39 @@ function renderMomentum(){
     <div class="momentum-stat"><div class="mnum">${touched}</div><div class="mlbl">${t('momentumTouched')}</div></div>
     <div class="momentum-stat"><div class="mnum">🏅 ${won}</div><div class="mlbl">${t('momentumWon')}</div></div>
   `;
+}
+
+function renderToday(){
+  const overdueCard = document.getElementById('todayOverdueCard');
+  const dueCard = document.getElementById('todayDueCard');
+  const newCard = document.getElementById('todayNewCard');
+  const invoiceCard = document.getElementById('todayInvoiceCard');
+  if(!overdueCard) return; // Today view not in DOM yet on first paint
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().slice(0,10);
+
+  const overdue = CASES.filter(c=> c.nextActionDate && c.nextActionDate < todayStr && !['closed','paid'].includes(c.status))
+    .sort((a,b)=> new Date(a.nextActionDate) - new Date(b.nextActionDate));
+  overdueCard.innerHTML = overdue.length===0
+    ? `<div class="empty"><div>${t('todayAllClearOverdue')}</div></div>`
+    : overdue.map(c=>caseRowHTML(c)).join('');
+
+  const dueToday = CASES.filter(c=> c.nextActionDate === todayStr && !['closed','paid'].includes(c.status));
+  dueCard.innerHTML = dueToday.length===0
+    ? `<div class="empty"><div>${t('todayAllClearDue')}</div></div>`
+    : dueToday.map(c=>caseRowHTML(c)).join('');
+
+  const newLeads = CASES.filter(c=> c.status==='new')
+    .sort((a,b)=>(Number(b.matchScore)||0)-(Number(a.matchScore)||0)).slice(0,5);
+  newCard.innerHTML = newLeads.length===0
+    ? `<div class="empty"><div>${t('todayNoNewLeads')}</div></div>`
+    : newLeads.map(c=>caseRowHTML(c)).join('');
+
+  const readyToInvoice = CASES.filter(c=> c.recoveryConfirmed && !(c.collection && c.collection.invoiceDate));
+  invoiceCard.innerHTML = readyToInvoice.length===0
+    ? `<div class="empty"><div>${t('todayNoInvoices')}</div></div>`
+    : readyToInvoice.map(c=>caseRowHTML(c)).join('');
 }
 
 function celebrate(amount){
