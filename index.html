@@ -51,7 +51,8 @@
 
   .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
   @media(min-width:640px){.kpis{grid-template-columns:repeat(4,1fr);}}
-  .kpi{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:14px;}
+  .kpi{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:14px;position:relative;}
+  .kpi-icon{position:absolute;top:12px;right:12px;font-size:18px;opacity:0.55;}
   .kpi .num{font-size:24px;font-weight:600;line-height:1.1;}
   .kpi .lbl{font-size:11.5px;color:var(--text-soft);margin-top:4px;}
   .kpi.accent{background:var(--ink);color:var(--paper);border-color:var(--ink);}
@@ -124,6 +125,27 @@
 
   footer.legal{max-width:1080px;margin:0 auto;padding:0 20px 40px 20px;font-size:11px;color:var(--text-soft);line-height:1.6;}
 
+  .hero-card{background:linear-gradient(135deg,var(--ink) 0%,var(--ink-2) 60%,var(--teal) 160%);border:none;color:var(--paper);padding:22px 20px;}
+  .hero-greeting{font-family:var(--serif);font-size:22px;font-weight:600;}
+  .hero-sub{font-size:13px;color:rgba(238,240,234,0.72);margin-top:4px;}
+
+  .goal-card .num{font-size:20px;}
+  .momentum-card{display:flex;gap:18px;flex-wrap:wrap;align-items:center;}
+  .momentum-stat{display:flex;align-items:center;gap:8px;}
+  .momentum-stat .mnum{font-family:var(--serif);font-weight:700;font-size:20px;color:var(--gold);}
+  .momentum-stat .mlbl{font-size:11.5px;color:var(--text-soft);}
+
+  #confettiLayer{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden;}
+  #confettiLayer span{position:absolute;top:-40px;font-size:22px;animation:confettiFall 2.2s ease-in forwards;}
+  @keyframes confettiFall{
+    0%{transform:translateY(0) rotate(0deg);opacity:1;}
+    100%{transform:translateY(110vh) rotate(360deg);opacity:0;}
+  }
+  #winToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);
+    padding:14px 20px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.25);z-index:201;opacity:0;
+    transition:opacity 0.3s ease, transform 0.3s ease;}
+  #winToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
   /* PIN gate */
   #pinGate{position:fixed;inset:0;background:var(--ink);color:var(--paper);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
   .pin-box{max-width:320px;width:100%;text-align:center;}
@@ -189,16 +211,34 @@
 
     <!-- DASHBOARD -->
     <div class="view active" id="view-dashboard">
+      <div class="card hero-card" id="heroCard">
+        <div class="hero-greeting" id="heroGreeting">Good morning.</div>
+        <div class="hero-sub" id="heroSub">Let's find some money today.</div>
+      </div>
+
+      <div class="card goal-card" id="goalCard" style="display:none;">
+        <div class="row-between">
+          <b data-i18n="goalTitle">This month's goal</b>
+          <span id="goalAmounts" style="font-size:12px;color:var(--text-soft);"></span>
+        </div>
+        <div style="background:var(--paper);border-radius:999px;height:10px;margin-top:10px;overflow:hidden;">
+          <div id="goalBar" style="background:linear-gradient(90deg,var(--gold-2),var(--gold));height:100%;width:0%;transition:width 0.6s ease;"></div>
+        </div>
+        <p id="goalMsg" style="font-size:12.5px;margin:10px 0 0 0;font-weight:600;"></p>
+      </div>
+
+      <div class="card momentum-card" id="momentumCard"></div>
+
       <div class="disclosure">
         <strong data-i18n="discTitle">How Pronto Recovery gets paid:</strong>
         <span data-i18n="discBody">The Texas Comptroller pays the claimant directly. Pronto Recovery never receives, holds, or routes the state's payment. The claimant pays the contracted fee separately after they confirm they were paid, per the signed agreement, capped at 10% under Property Code Section 74.507.</span>
       </div>
 
       <div class="kpis">
-        <div class="kpi accent"><div class="num" id="kpiPotential">$0</div><div class="lbl" data-i18n="kpiPotential">Potential recovery</div></div>
-        <div class="kpi"><div class="num" id="kpiActive">0</div><div class="lbl" data-i18n="kpiActive">Active cases</div></div>
-        <div class="kpi teal"><div class="num" id="kpiRecovered">$0</div><div class="lbl" data-i18n="kpiRecovered">Recovered to clients</div></div>
-        <div class="kpi gold"><div class="num" id="kpiCollected">$0</div><div class="lbl" data-i18n="kpiCollected">Fees collected</div></div>
+        <div class="kpi accent"><div class="kpi-icon">💰</div><div class="num" id="kpiPotential">$0</div><div class="lbl" data-i18n="kpiPotential">Potential recovery</div></div>
+        <div class="kpi"><div class="kpi-icon">📂</div><div class="num" id="kpiActive">0</div><div class="lbl" data-i18n="kpiActive">Active cases</div></div>
+        <div class="kpi teal"><div class="kpi-icon">✅</div><div class="num" id="kpiRecovered">$0</div><div class="lbl" data-i18n="kpiRecovered">Recovered to clients</div></div>
+        <div class="kpi gold"><div class="kpi-icon">🏆</div><div class="num" id="kpiCollected">$0</div><div class="lbl" data-i18n="kpiCollected">Fees collected</div></div>
       </div>
 
       <div class="section-title" data-i18n="collRateTitle">Collection rate</div>
@@ -295,6 +335,13 @@
         <input type="number" id="settingFee" min="1" max="10" step="0.5" value="10" onchange="saveSettings()">
         <label data-i18n="thresholdLabel">Minimum recovery value to qualify a lead</label>
         <input type="number" id="settingThreshold" min="0" step="100" value="2500" onchange="saveSettings()">
+      </div>
+      <div class="section-title" data-i18n="motivationTitle">Motivation</div>
+      <div class="card">
+        <label data-i18n="yourNameLabel">Your name (for the dashboard greeting)</label>
+        <input id="settingYourName" placeholder="Jennifer" onchange="saveSettings()">
+        <label data-i18n="goalLabel">Monthly fee goal ($)</label>
+        <input type="number" id="settingGoal" min="0" step="50" placeholder="1000" onchange="saveSettings()">
       </div>
       <div class="section-title" data-i18n="lockTitle">Screen lock</div>
       <div class="card">
@@ -438,6 +485,8 @@
 </div>
 
 <div id="printArea"></div>
+<div id="confettiLayer"></div>
+<div id="winToast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -510,6 +559,14 @@ en:{
   billingTitle:"Fees owed and collected",
   outreachTitle:"Outreach template", outreachNote:"Copy and personalize. Never state a dollar amount unless the record has been verified against the claimant's identity.", copyBtn:"Copy text", printBtn:"Print",
   settingsTitle:"Settings", feeCapLabel:"Standard fee percentage (max 10%, Property Code 74.507)", thresholdLabel:"Minimum recovery value to qualify a lead",
+  motivationTitle:"Motivation", yourNameLabel:"Your name (for the dashboard greeting)", goalLabel:"Monthly fee goal ($)",
+  goalTitle:"This month's goal",
+  heroSub1:"Let's find some money today.", heroSub2:"Someone out there is waiting on a check they don't know about.",
+  heroSub3:"Small steps, real recoveries.", heroSub4:"Every case you touch today moves something forward.",
+  goalMsgStart:"Every case counts. Let's get moving.", goalMsgQuarter:"Building momentum.", goalMsgHalf:"More than halfway there.",
+  goalMsgClose:"Almost at goal, keep pushing.", goalMsgHit:"Goal hit this month! 🎉", noGoalSet:"Set a monthly goal in Settings to track progress here.",
+  momentumTouched:"cases touched this 7 days", momentumWon:"wins this month", winToastMsg:"collected! Nice work.",
+  goodMorning:"Good morning", goodAfternoon:"Good afternoon", goodEvening:"Good evening",
   lockTitle:"Screen lock", changePinBtn:"Change PIN", removePinBtn:"Remove PIN", workspaceLabel:"Workspace name",
   dataTitle:"Data", exportBtn:"Export all data (JSON)", importDataBtn:"Restore from export (JSON)", clearBtn:"Clear all data",
   storageNote:"Data is stored locally in this browser only. This is a Phase 0/1 validation build; connect Firebase before multi-user or production use.",
@@ -561,6 +618,14 @@ es:{
   billingTitle:"Comisiones pendientes y cobradas",
   outreachTitle:"Plantilla de contacto", outreachNote:"Copie y personalice. Nunca indique una cantidad exacta a menos que el registro esté verificado con la identidad del reclamante.", copyBtn:"Copiar texto", printBtn:"Imprimir",
   settingsTitle:"Ajustes", feeCapLabel:"Porcentaje de comisión estándar (máximo 10%, Sección 74.507)", thresholdLabel:"Valor mínimo de recuperación para calificar un caso potencial",
+  motivationTitle:"Motivación", yourNameLabel:"Su nombre (para el saludo del panel)", goalLabel:"Meta mensual de comisiones ($)",
+  goalTitle:"Meta de este mes",
+  heroSub1:"Vamos a encontrar dinero hoy.", heroSub2:"Alguien por ahí está esperando un cheque que ni sabe que existe.",
+  heroSub3:"Pasos pequeños, recuperaciones reales.", heroSub4:"Cada caso que toque hoy mueve algo hacia adelante.",
+  goalMsgStart:"Cada caso cuenta. Vamos a movernos.", goalMsgQuarter:"Agarrando impulso.", goalMsgHalf:"Ya pasó la mitad.",
+  goalMsgClose:"Casi llega a la meta, siga empujando.", goalMsgHit:"¡Meta cumplida este mes! 🎉", noGoalSet:"Configure una meta mensual en Ajustes para ver el progreso aquí.",
+  momentumTouched:"casos tocados en 7 días", momentumWon:"casos ganados este mes", winToastMsg:"cobrado! Buen trabajo.",
+  goodMorning:"Buenos días", goodAfternoon:"Buenas tardes", goodEvening:"Buenas noches",
   lockTitle:"Bloqueo de pantalla", changePinBtn:"Cambiar PIN", removePinBtn:"Eliminar PIN", workspaceLabel:"Nombre del espacio de trabajo",
   dataTitle:"Datos", exportBtn:"Exportar todos los datos (JSON)", importDataBtn:"Restaurar desde exportación (JSON)", clearBtn:"Borrar todos los datos",
   storageNote:"Los datos se guardan localmente solo en este navegador. Esta es una versión de validación de Fase 0/1, conecte Firebase antes de uso multiusuario o de producción.",
@@ -823,6 +888,8 @@ function loadSettingsFromCloud(){
     if(doc.exists) SETTINGS = doc.data();
     document.getElementById('settingFee').value = SETTINGS.feePct;
     document.getElementById('settingThreshold').value = SETTINGS.threshold;
+    document.getElementById('settingYourName').value = SETTINGS.yourName || '';
+    document.getElementById('settingGoal').value = SETTINGS.monthlyGoal || '';
   });
 }
 function db_saveSettings(){
@@ -881,6 +948,10 @@ function buildStatusFilter(){
 
 /* ---------- Dashboard ---------- */
 function renderDashboard(){
+  renderHero();
+  renderGoal();
+  renderMomentum();
+
   const active = CASES.filter(c=>!['closed','paid'].includes(c.status));
   const potential = active.reduce((s,c)=>s+(Number(c.estimatedValue)||0),0);
   const recoveredCases = CASES.filter(c=>c.recoveryConfirmed);
@@ -907,6 +978,72 @@ function renderDashboard(){
   const top = [...CASES].filter(c=>!['closed','paid'].includes(c.status)).sort((a,b)=>(Number(b.matchScore)||0)-(Number(a.matchScore)||0)).slice(0,5);
   const card = document.getElementById('topLeadsCard');
   card.innerHTML = top.length===0 ? `<div class="empty"><div class="num">0</div><div>${t('emptyCases')}</div></div>` : top.map(c=>caseRowHTML(c)).join('');
+}
+
+function renderHero(){
+  const hour = new Date().getHours();
+  const greetKey = hour<12 ? 'goodMorning' : hour<18 ? 'goodAfternoon' : 'goodEvening';
+  const name = SETTINGS.yourName ? ', ' + SETTINGS.yourName : '';
+  document.getElementById('heroGreeting').textContent = t(greetKey) + name + '.';
+  const subs = ['heroSub1','heroSub2','heroSub3','heroSub4'];
+  const dayIndex = new Date().getDate() % subs.length;
+  document.getElementById('heroSub').textContent = t(subs[dayIndex]);
+}
+
+function renderGoal(){
+  const goalCard = document.getElementById('goalCard');
+  const goal = Number(SETTINGS.monthlyGoal)||0;
+  if(goal<=0){ goalCard.style.display = 'none'; return; }
+  goalCard.style.display = 'block';
+  const now = new Date();
+  const thisMonthKey = now.toISOString().slice(0,7);
+  let earned = 0;
+  CASES.forEach(c=>{
+    const paidDate = c.collection && c.collection.paidDate;
+    if(paidDate && paidDate.slice(0,7)===thisMonthKey) earned += computeFee(c).fee;
+  });
+  const pct = Math.min(100, Math.round((earned/goal)*100));
+  document.getElementById('goalAmounts').textContent = fmtMoney(earned) + ' / ' + fmtMoney(goal);
+  document.getElementById('goalBar').style.width = pct+'%';
+  let msgKey = 'goalMsgStart';
+  if(pct>=100) msgKey = 'goalMsgHit';
+  else if(pct>=75) msgKey = 'goalMsgClose';
+  else if(pct>=50) msgKey = 'goalMsgHalf';
+  else if(pct>=25) msgKey = 'goalMsgQuarter';
+  document.getElementById('goalMsg').textContent = t(msgKey);
+}
+
+function renderMomentum(){
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7*24*60*60*1000);
+  const touched = CASES.filter(c=>{
+    const logs = c.activityLog||[];
+    return logs.some(l=> new Date(l.date) >= weekAgo) || new Date(c.updatedAt||c.createdAt||0) >= weekAgo;
+  }).length;
+  const thisMonthKey = now.toISOString().slice(0,7);
+  const won = CASES.filter(c=> c.collection && c.collection.paidDate && c.collection.paidDate.slice(0,7)===thisMonthKey).length;
+  document.getElementById('momentumCard').innerHTML = `
+    <div class="momentum-stat"><div class="mnum">${touched}</div><div class="mlbl">${t('momentumTouched')}</div></div>
+    <div class="momentum-stat"><div class="mnum">🏅 ${won}</div><div class="mlbl">${t('momentumWon')}</div></div>
+  `;
+}
+
+function celebrate(amount){
+  const layer = document.getElementById('confettiLayer');
+  const emojis = ['🎉','💰','✨','🏆','💵'];
+  for(let i=0;i<24;i++){
+    const span = document.createElement('span');
+    span.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    span.style.left = Math.random()*100+'vw';
+    span.style.animationDelay = (Math.random()*0.4)+'s';
+    span.style.fontSize = (16+Math.random()*16)+'px';
+    layer.appendChild(span);
+    setTimeout(()=>span.remove(), 2600);
+  }
+  const toast = document.getElementById('winToast');
+  toast.textContent = fmtMoney(amount) + ' ' + t('winToastMsg');
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 3200);
 }
 
 /* ---------- Cases list ---------- */
@@ -1427,7 +1564,10 @@ function setCollectionDate(id, key){
   const c = CASES.find(x=>x.id===id); if(!c) return;
   if(!c.collection) c.collection = {};
   c.collection[key] = new Date().toISOString().slice(0,10);
-  if(key==='paidDate') c.status='paid';
+  if(key==='paidDate'){
+    c.status='paid';
+    celebrate(computeFee(c).fee);
+  }
   db_setCase(c);
   renderCollection(c);
   renderDashboard(); renderBilling();
@@ -1517,7 +1657,10 @@ function handleCsv(evt){
 function saveSettings(){
   SETTINGS.feePct = Math.min(10, Math.max(0, Number(document.getElementById('settingFee').value)||10));
   SETTINGS.threshold = Number(document.getElementById('settingThreshold').value)||0;
+  SETTINGS.yourName = document.getElementById('settingYourName').value.trim();
+  SETTINGS.monthlyGoal = Number(document.getElementById('settingGoal').value)||0;
   db_saveSettings();
+  renderDashboard();
 }
 function saveWorkspace(){
   const v = document.getElementById('settingWorkspace').value.trim();
@@ -1555,6 +1698,8 @@ function handleRestore(evt){
         SETTINGS = data.settings;
         document.getElementById('settingFee').value = SETTINGS.feePct;
         document.getElementById('settingThreshold').value = SETTINGS.threshold;
+        document.getElementById('settingYourName').value = SETTINGS.yourName || '';
+        document.getElementById('settingGoal').value = SETTINGS.monthlyGoal || '';
         db_saveSettings();
       }
       if(!FIREBASE_ENABLED) saveCases(CASES);
@@ -1632,6 +1777,8 @@ function printCasesReport(){
 initPinGate();
 document.getElementById('settingFee').value = SETTINGS.feePct;
 document.getElementById('settingThreshold').value = SETTINGS.threshold;
+document.getElementById('settingYourName').value = SETTINGS.yourName || '';
+document.getElementById('settingGoal').value = SETTINGS.monthlyGoal || '';
 document.getElementById('settingWorkspace').value = localStorage.getItem('pr_workspace') || '';
 applyI18n();
 </script>
