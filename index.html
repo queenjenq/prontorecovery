@@ -504,6 +504,19 @@
   </div>
 </div>
 
+<!-- DUPLICATE CONFIRM MODAL -->
+<div class="modal-bg" id="dupModalBg">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-head">
+      <h3 data-i18n="dupTitle">Possible duplicate</h3>
+      <button class="close-x" onclick="cancelDupSave()">&times;</button>
+    </div>
+    <p id="dupMsg" style="font-size:14px;line-height:1.5;"></p>
+    <button class="btn gold block" onclick="confirmDupSave()" data-i18n="dupSaveAnyway">Yes, save it anyway</button>
+    <button class="btn ghost block" style="margin-top:8px;" onclick="cancelDupSave()" data-i18n="dupGoBack">No, let me check it first</button>
+  </div>
+</div>
+
 <div id="printArea"></div>
 <div id="confettiLayer"></div>
 <div id="winToast"></div>
@@ -619,6 +632,7 @@ en:{
   lGross:"Recovery", lFee:"Your fee", lNet:"Client net", saveBtn:"Save case",
   docsTitle:"Documents", agreementTitle:"Agreement", collectionTitle:"Collection tracking", activityTitle:"Activity log", addLogBtn:"Add entry", deleteBtn:"Delete case",
   emptyCases:"No cases yet. Add your first lead to start tracking it through the pipeline.", emptyFollowup:"Nothing due. Set a next action date on a case to track follow ups here.",
+  dupTitle:"Possible duplicate", dupSaveAnyway:"Yes, save it anyway", dupGoBack:"No, let me check it first",
   docGovId:"Government ID", docProofAddr:"Proof of address", docOwnership:"Supporting ownership documentation",
   docEstateFlag:"Estate/heir review required, additional heirship documentation needed",
   invSent:"Invoice sent", rem1:"Reminder 1 sent", rem2:"Reminder 2 sent", finalNotice:"Final notice sent", paidDate:"Payment received",
@@ -682,6 +696,7 @@ es:{
   lGross:"Recuperación", lFee:"Su comisión", lNet:"Neto del cliente", saveBtn:"Guardar caso",
   docsTitle:"Documentos", agreementTitle:"Acuerdo", collectionTitle:"Seguimiento de cobro", activityTitle:"Registro de actividad", addLogBtn:"Agregar entrada", deleteBtn:"Eliminar caso",
   emptyCases:"Aún no hay casos. Agregue su primer caso potencial para darle seguimiento en el proceso.", emptyFollowup:"Nada pendiente. Ponga una fecha de próxima acción en un caso para verlo aquí.",
+  dupTitle:"Posible duplicado", dupSaveAnyway:"Sí, guardar de todos modos", dupGoBack:"No, déjeme revisarlo primero",
   docGovId:"Identificación oficial", docProofAddr:"Comprobante de domicilio", docOwnership:"Documentación de propiedad",
   docEstateFlag:"Revisión de herencia requerida, se necesita documentación adicional de herederos",
   invSent:"Factura enviada", rem1:"Recordatorio 1 enviado", rem2:"Recordatorio 2 enviado", finalNotice:"Aviso final enviado", paidDate:"Pago recibido",
@@ -1404,12 +1419,24 @@ function saveCase(){
   if(isNew && ownerName){
     const dup = CASES.find(c=> (c.ownerName||'').trim().toLowerCase()===ownerName.toLowerCase() && (c.city||'').trim().toLowerCase()===city.toLowerCase());
     if(dup){
-      const msg = LANG==='es'
-        ? 'Ya existe un caso con ese nombre y ciudad ('+t(STATUS_LABEL[dup.status])+'). ¿Guardar de todos modos?'
-        : 'A case with that name and city already exists ('+t(STATUS_LABEL[dup.status])+'). Save anyway?';
-      if(!confirm(msg)) return;
+      document.getElementById('dupMsg').textContent = LANG==='es'
+        ? 'Ya existe un caso con ese nombre y ciudad, estado actual: '+t(STATUS_LABEL[dup.status])+'.'
+        : 'A case with that name and city already exists, current status: '+t(STATUS_LABEL[dup.status])+'.';
+      document.getElementById('dupModalBg').classList.add('open');
+      return;
     }
   }
+  doSaveCase(id);
+}
+function confirmDupSave(){
+  document.getElementById('dupModalBg').classList.remove('open');
+  const id = document.getElementById('caseId').value || ('c_'+Date.now());
+  doSaveCase(id);
+}
+function cancelDupSave(){
+  document.getElementById('dupModalBg').classList.remove('open');
+}
+function doSaveCase(id){
   const existing = CASES.find(c=>c.id===id) || {id, createdAt:new Date().toISOString(), documents:{}, activityLog:[], collection:{}, recoveryConfirmed:false};
   existing.ownerName = document.getElementById('fOwner').value.trim();
   existing.estimatedValue = Number(document.getElementById('fValue').value)||0;
