@@ -913,10 +913,17 @@ function db_clearAll(){
     saveCases(CASES);
   }
 }
+let casesLoaded = !FIREBASE_ENABLED;
+function loadingOrEmptyHTML(list, emptyMsgKey){
+  if(!casesLoaded) return `<div class="empty"><div>${LANG==='es'?'Cargando sus casos…':'Loading your cases…'}</div></div>`;
+  if(list.length===0) return `<div class="empty"><div class="num">0</div><div>${t(emptyMsgKey)}</div></div>`;
+  return null;
+}
 function subscribeCases(){
   if(unsubCases) unsubCases();
   unsubCases = fbDb.collection('users').doc(currentUser.uid).collection('cases').onSnapshot(snap=>{
     CASES = snap.docs.map(d=>d.data());
+    casesLoaded = true;
     renderDashboard(); renderCases(); renderBilling(); renderReports();
   }, err=>{
     console.error('Sync error', err);
@@ -1018,11 +1025,11 @@ function renderDashboard(){
   const due = CASES.filter(c=>c.nextActionDate && !['closed','paid'].includes(c.status))
     .sort((a,b)=> new Date(a.nextActionDate) - new Date(b.nextActionDate)).slice(0,6);
   const fCard = document.getElementById('followupCard');
-  fCard.innerHTML = due.length===0 ? `<div class="empty"><div>${t('emptyFollowup')}</div></div>` : due.map(c=>caseRowHTML(c)).join('');
+  fCard.innerHTML = loadingOrEmptyHTML(due, 'emptyFollowup') || due.map(c=>caseRowHTML(c)).join('');
 
   const top = [...CASES].filter(c=>!['closed','paid'].includes(c.status)).sort((a,b)=>(Number(b.matchScore)||0)-(Number(a.matchScore)||0)).slice(0,5);
   const card = document.getElementById('topLeadsCard');
-  card.innerHTML = top.length===0 ? `<div class="empty"><div class="num">0</div><div>${t('emptyCases')}</div></div>` : top.map(c=>caseRowHTML(c)).join('');
+  card.innerHTML = loadingOrEmptyHTML(top, 'emptyCases') || top.map(c=>caseRowHTML(c)).join('');
 }
 
 function renderHero(){
@@ -1085,25 +1092,17 @@ function renderToday(){
 
   const overdue = CASES.filter(c=> c.nextActionDate && c.nextActionDate < todayStr && !['closed','paid'].includes(c.status))
     .sort((a,b)=> new Date(a.nextActionDate) - new Date(b.nextActionDate));
-  overdueCard.innerHTML = overdue.length===0
-    ? `<div class="empty"><div>${t('todayAllClearOverdue')}</div></div>`
-    : overdue.map(c=>caseRowHTML(c)).join('');
+  overdueCard.innerHTML = loadingOrEmptyHTML(overdue, 'todayAllClearOverdue') || overdue.map(c=>caseRowHTML(c)).join('');
 
   const dueToday = CASES.filter(c=> c.nextActionDate === todayStr && !['closed','paid'].includes(c.status));
-  dueCard.innerHTML = dueToday.length===0
-    ? `<div class="empty"><div>${t('todayAllClearDue')}</div></div>`
-    : dueToday.map(c=>caseRowHTML(c)).join('');
+  dueCard.innerHTML = loadingOrEmptyHTML(dueToday, 'todayAllClearDue') || dueToday.map(c=>caseRowHTML(c)).join('');
 
   const newLeads = CASES.filter(c=> c.status==='new')
     .sort((a,b)=>(Number(b.matchScore)||0)-(Number(a.matchScore)||0)).slice(0,5);
-  newCard.innerHTML = newLeads.length===0
-    ? `<div class="empty"><div>${t('todayNoNewLeads')}</div></div>`
-    : newLeads.map(c=>caseRowHTML(c)).join('');
+  newCard.innerHTML = loadingOrEmptyHTML(newLeads, 'todayNoNewLeads') || newLeads.map(c=>caseRowHTML(c)).join('');
 
   const readyToInvoice = CASES.filter(c=> c.recoveryConfirmed && !(c.collection && c.collection.invoiceDate));
-  invoiceCard.innerHTML = readyToInvoice.length===0
-    ? `<div class="empty"><div>${t('todayNoInvoices')}</div></div>`
-    : readyToInvoice.map(c=>caseRowHTML(c)).join('');
+  invoiceCard.innerHTML = loadingOrEmptyHTML(readyToInvoice, 'todayNoInvoices') || readyToInvoice.map(c=>caseRowHTML(c)).join('');
 }
 
 function celebrate(amount){
@@ -1163,7 +1162,7 @@ function renderCases(){
     return matchQ && matchF;
   });
   list = list.sort((a,b)=> new Date(b.updatedAt||0) - new Date(a.updatedAt||0));
-  card.innerHTML = list.length===0 ? `<div class="empty"><div class="num">0</div><div>${t('emptyCases')}</div></div>` : list.map(c=>caseRowHTML(c, true)).join('');
+  card.innerHTML = loadingOrEmptyHTML(list, 'emptyCases') || list.map(c=>caseRowHTML(c, true)).join('');
   updateBulkBar();
 }
 function toggleSelect(id, checked){
@@ -1209,7 +1208,8 @@ function bulkSetNextAction(){
 function renderBilling(){
   const card = document.getElementById('billingCard');
   const relevant = CASES.filter(c=>c.recoveryConfirmed);
-  if(relevant.length===0){ card.innerHTML = `<div class="empty"><div class="num">0</div><div>${t('emptyCases')}</div></div>`; return; }
+  const empty = loadingOrEmptyHTML(relevant, 'emptyCases');
+  if(empty){ card.innerHTML = empty; return; }
   card.innerHTML = relevant.map(c=>{
     const fee = computeFee(c);
     const paid = !!(c.collection && c.collection.paidDate);
